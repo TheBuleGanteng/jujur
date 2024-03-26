@@ -16,20 +16,32 @@ from dotenv import load_dotenv
 import os
 from pathlib import Path
 
+
 # Assuming your .env file is at the root of your Django project, adjust the path as necessary
+#dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'gitignored', '.env')
 dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'gitignored', '.env')
 load_dotenv(dotenv_path)
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # Use .env file to set project environment, with 'dev' as the fallback
+SECRET_KEY = os.getenv('SECRET_KEY')
 PROJECT_ENV = os.getenv('ENVIRONMENT', 'development')
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', ]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']
+
+
+#SECURE_SSL_REDIRECT = False
+#SESSION_COOKIE_SECURE = False
+#SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 #ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'www.mattmcdonnell.net', 'mattmcdonnell.net', '10.148.*', 'homepage-417007.uc.r.appspot.com', '172.17.*', '172.27.']
+
 print(f'running settings.py ... PROJECT_ENV is: { PROJECT_ENV }')
 print(f'running settings.py ... ALLOWED_HOSTS is: { ALLOWED_HOSTS }')
 
@@ -49,6 +61,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -59,9 +72,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
-ROOT_URLCONF = "MyFin50d.urls"
+ROOT_URLCONF = "MyFin50d_project.urls"
 
 TEMPLATES = [
     {
@@ -79,7 +93,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "MyFin50d.wsgi.application"
+WSGI_APPLICATION = "MyFin50d_project.wsgi.application"
 
 
 # Database
@@ -126,8 +140,9 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
+STATIC_URL = "static/" # This tells django for look for static files in any folder called 'static'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') #This tells django/whitenoise/gunicorn where to consolidate the static files for easier serving.
 
-STATIC_URL = "static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

@@ -1,0 +1,41 @@
+# Use an official Python runtime as a parent image (find your version via: python --version)
+FROM python:3.10.12
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Print a message to indicate the start of installing dependencies
+RUN echo "Installing dependencies..."
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Expose port 8000 for gunicorn
+ENV PORT 8000
+
+# Print a message to indicate the completion of installing dependencies
+RUN echo "Dependencies installed successfully."
+
+# Copy Supervisor configuration file into the container at the custom location
+COPY supervisor/supervisord.conf /app/supervisor/supervisord.conf
+
+# Collect static files into the STATIC ROOT specified in settings.py
+RUN echo "Collecting static files..." \
+    && python manage.py collectstatic --noinput \
+    && echo "Static files collected successfully."
+
+# Make directory for supervisor logs
+RUN mkdir -p /var/log/supervisor
+
+# Copy entrypoint script into the container
+COPY entrypoint.sh /entrypoint.sh
+# Make entrypoint script executable
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Use gunicorn to run the application with SSL certificates (production version is listed at top, dev version is below)
+#CMD ["supervisord", "-c", "/app/supervisor/supervisord.conf"]

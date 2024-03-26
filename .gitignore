@@ -1,4 +1,7 @@
 # created by virtualenv automatically
 gitignored/
+*__pycache__*
 *-venv/
-
+*.crt
+*.key
+entrypoint.sh
