@@ -1,0 +1,9 @@
+
+myfin50d-venv
+__pycache__
+db.sqlite3
+.git
+.gitignore
+Dockerfile
+*.pyc
+cert.key
