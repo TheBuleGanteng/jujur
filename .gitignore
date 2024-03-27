@@ -1,9 +1,0 @@
-# created by virtualenv automatically
-gitignored/
-*__pycache__*
-*-venv/
-*.crt
-*.key
-entrypoint.sh
-*push_to_private.sh*
-scripts/
