@@ -26,5 +26,8 @@ REMOTE_BRANCH_NAME=$(git config --get branch.main.merge | sed 's/refs\/heads\///
 # Push the committed changes to the remote branch (force push)
 git push -f "$GIT_REPO_URL" "$REMOTE_BRANCH_NAME"
 
+# Restore the working directory state (untracked & ignored files)
+git clean -f
+
 echo "Project pushed successfully to $GIT_REPO_URL (**WARNING: Bypassed .gitignore**)"
 
