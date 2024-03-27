@@ -1,3 +1,6 @@
+# Note: This script pushes all contents of the project folder to my private repo for purposes of subsequent deployment to my VM.
+# To run this script from the project's root directory, use: ./scripts/push_to_private.sh
+
 #!/bin/bash
 
 # Replace these placeholders with your actual values
