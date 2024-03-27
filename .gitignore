@@ -6,3 +6,4 @@ gitignored/
 *.key
 entrypoint.sh
 *push_to_private.sh*
+scripts/
