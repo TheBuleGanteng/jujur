@@ -7,3 +7,4 @@ gitignored/
 entrypoint.sh
 *push_to_private.sh*
 scripts/
+logs/
