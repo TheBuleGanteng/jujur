@@ -13,8 +13,10 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from dotenv import load_dotenv
 #from homepage_app.helpers.logging import configure_logging
 #import importlib.util
+import logging
 import os
 from pathlib import Path
+
 
 
 # Assuming your .env file is at the root of your Django project, adjust the path as necessary
@@ -35,6 +37,10 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 PROJECT_ENV = os.getenv('ENVIRONMENT', 'development')
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*', '34.70.192.208']
 
+
+
+logger = logging.getLogger('django')
+logger.debug('Hello, logging world!')
 
 #SECURE_SSL_REDIRECT = False
 #SESSION_COOKIE_SECURE = False
@@ -148,3 +154,33 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') #This tells django/whitenois
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/app/logs/django.log',  # Updated path
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+    },
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
