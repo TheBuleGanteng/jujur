@@ -5,5 +5,3 @@ gitignored/
 *.crt
 *.key
 entrypoint.sh
-push_to_private.sh
-/logs
