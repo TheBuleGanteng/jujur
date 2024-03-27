@@ -30,4 +30,4 @@ git push -f "$GIT_REPO_URL" "$REMOTE_BRANCH_NAME"
 git clean -f
 
 echo "Project pushed successfully to $GIT_REPO_URL (**WARNING: Bypassed .gitignore**)"
-
+echo 'hello'
