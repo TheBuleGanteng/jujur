@@ -1,4 +1,4 @@
-# Test push 11:06
+
 """
 Django settings for MyFin50d project.
 

@@ -30,12 +30,5 @@ RUN echo "Collecting static files..." \
 # Make directory for supervisor logs
 RUN mkdir -p /var/log/supervisor
 
-# Copy entrypoint script into the container
-COPY entrypoint.sh /entrypoint.sh
-# Make entrypoint script executable
-RUN chmod +x /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
-
 # Use gunicorn to run the application with SSL certificates (production version is listed at top, dev version is below)
-#CMD ["supervisord", "-c", "/app/supervisor/supervisord.conf"]
+CMD ["supervisord", "-c", "/app/supervisor/supervisord.conf"]
