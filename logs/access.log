@@ -1,3 +1,0 @@
-172.18.0.1 - - [27/Mar/2024:11:24:37 +0000] "GET / HTTP/1.1" 200 10629 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36" "-"
-172.18.0.1 - - [28/Mar/2024:04:59:32 +0000] "GET / HTTP/1.1" 200 10629 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36" "-"
-172.18.0.1 - - [28/Mar/2024:04:59:32 +0000] "GET /favicon.ico HTTP/1.1" 404 2115 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36" "-"
