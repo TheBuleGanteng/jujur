@@ -1,3 +1,4 @@
+# Test change
 """
 Django settings for MyFin50d project.
 
