@@ -5,17 +5,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.django
-    
-    
     volumes:
       - .:/app
-      - static_volume:/app/static
+      - ./gitignored:/certs # Mounts the gitignored directory to /certs inside the container
+      - static_volume:/app/staticfiles
       - media_volume:/app/media
       - ./logs:/app/logs # Added in logging setup
     expose:
       - "8000"
       - "9001" # Added to access supervisor logs
     ports:
+      - "8000:8000"  # Maps port 8000 of the container to port 8000 on the host
       - "9001:9001"  # Map port 9001 from host to container
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000"]
@@ -28,11 +28,13 @@ services:
       context: .
       dockerfile: Dockerfile.nginx
     volumes:
-      - static_volume:/app/static
+      - ./gitignored:/certs  # This line maps the local 'gitignored' directory to '/certs' inside the container
+      - static_volume:/app/staticfiles
       - media_volume:/app/media
       - ./logs:/var/log/nginx # Added in logging setup
     ports:
-      - "80:80"
+      - "80:80" # For http
+      - "443:443" # For https
     depends_on:
       - web
 
