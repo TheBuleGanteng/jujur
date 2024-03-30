@@ -1,0 +1,55 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block main %}
+    <div class='container-fluid text-center'>
+        
+        <!-- login form -->
+        <form action='{% url "users:login" %}' method='post'>
+            {% csrf_token %}
+            
+            <!-- email -->
+            <div class='mb-3'>
+                <input type="email" name="{{ form.email.name }}" value="{{ form.email.value|default:'' }}" class="form-control mx-auto w-auto" id="email" autocomplete="off" placeholder="Email address">
+            </div>
+            <div class='mb-3'>
+                {% if form.email.errors %}
+                    <div class='errors'>
+                        {% for error in form.email.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <!-- /email -->
+
+            <!-- password -->
+            <div class='mb-3'>
+                <input type="password" name="{{ form.password.name }}" class="form-control mx-auto w-auto" id="password" autocomplete="off" placeholder="Password">
+            </div>
+            <div class='mb-3'>
+                {% if form.password.errors %}
+                    <div class='errors'>
+                        {% for error in form.password.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <!-- /password -->
+            
+            <button type='submit' class='btn btn-primary' id='submit_button'>Log In</button>
+        </form>
+        <!-- /login form -->
+
+        <!-- links to register or reset pw -->
+        <a href='{# url "register" #}#'>New user? Click here to create an account</a>
+        <br>
+        <a href='{# url "password_reset_request" #}#'>Forgot your password? Click here to reset</a>
+        <!-- /links to register or reset pw -->
+
+    </div>
+{% endblock %}

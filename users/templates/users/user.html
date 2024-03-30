@@ -1,0 +1,14 @@
+{% extends "users/layout.html" %}
+
+{% block body %}
+    <!-- Will display Welcome, Ron (or whatever is user's first name). -->
+    <h1>Welcome, {{ request.user.first_name }}</h1>
+
+    <ul>
+        <!-- Displays username and email. -->
+        <li>Username: {{ request.user.username }}</li>
+        <li>Email: {{ request.user.email }}</li>
+    </ul>
+    <!-- Logout link. -->
+    <a href="{% url 'logout' %}">Log Out</a>
+{% endblock %}

@@ -15,8 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
+from utils.views import readiness_check #This is done to allow readiness_check (defined in utils/views.py) access to the root url
 
 urlpatterns = [
+    #path('brokerage/', include('brokerage.urls')),
+    path('', include(('users.urls', 'users'), namespace='users')),
     path("admin/", admin.site.urls),
+    path('csp/', include('csp.urls', namespace='csp')),
+    path('readiness_check/', readiness_check, name='readiness_check'),
+    path('utils/', include(('utils.urls', 'utils'), namespace='utils')),
 ]

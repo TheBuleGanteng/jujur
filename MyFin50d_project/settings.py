@@ -27,6 +27,7 @@ load_dotenv(dotenv_path)
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+#BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -36,18 +37,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Use .env file to set project environment, with 'dev' as the fallback
 SECRET_KEY = os.getenv('SECRET_KEY')
 PROJECT_ENV = os.getenv('ENVIRONMENT', 'development')
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*', '34.70.192.208']
+DEBUG=True
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '34.70.192.208']
 
-
-
+log_to_file = os.getenv('LOG_TO_FILE', 'False') == 'True'
+log_to_terminal = os.getenv('LOG_TO_TERMINAL', 'False') == 'True'
 logger = logging.getLogger('django')
-logger.debug('Hello, logging world!')
 
-#SECURE_SSL_REDIRECT = False
-#SESSION_COOKIE_SECURE = False
-#SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-#ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'www.mattmcdonnell.net', 'mattmcdonnell.net', '10.148.*', 'homepage-417007.uc.r.appspot.com', '172.17.*', '172.27.']
+CSRF_COOKIE_SECURE=False # Must be True for deployment
+SECURE_SSL_REDIRECT=True # Must be True for deployment
+SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO', 'https')
 
 print(f'running settings.py ... PROJECT_ENV is: { PROJECT_ENV }')
 print(f'running settings.py ... ALLOWED_HOSTS is: { ALLOWED_HOSTS }')
@@ -62,6 +61,13 @@ else:
 
 # Application definition
 INSTALLED_APPS = [
+    # Apps created for this project
+    #'brokerage',
+    'users', # Manages registration, user profiles, login, passwords
+    'utils', # Manages CSP reporting, nonce generation, readiness check
+    # Utilities
+    'csp',
+    # Default Django apps
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -72,6 +78,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'csp.middleware.CspNonceMiddleware', # Added to generate nonces and affix them to HTML headers
+    'csp.middleware.CspHeaderMiddleware', # Added to generate nonces and affix them to HTML headers
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -149,7 +157,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 STATIC_URL = "static/" # This tells django for look for static files in any folder called 'static'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') #This tells django/whitenoise/gunicorn where to consolidate the static files for easier serving.
-
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'shared_static'), # Ensures that the contents of shared_static/ are also collected when running 'manage.py collectstatic'
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -157,31 +167,106 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') #This tells django/whitenois
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
+# CSP Settings
+CSP_DEFAULTS = {
+"default-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://www.googletagmanager.com", "https://www.google-analytics.com"],
+    "script-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://code.jquery.com/", "https://www.googletagmanager.com", "https://www.google-analytics.com", "https://substackapi.com", "{nonce}"],
+    "style-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
+    "img-src": ["'self'", "data:", "https://127.0.0.1:8000", "https://financialmodelingprep.com/", "https://images.unsplash.com", "https://substackcdn.com"],
+    "frame-src": ["'self'", "https://www.youtube.com"],
+    "connect-src": ["'self'", "https://substackapi.com", "https://www.google-analytics.com"],
+    # Add more directives as needed
+}
+
+CSP_REPORT_URI = 'utils/csp_violation_report'
+CSP_ENABLED = True
+CSP_REPORT_ONLY = False  # Set to True if you want to only report violations without enforcing the policy
+CSP_REPORT_SAMPLING = 1.0  # Adjust the sampling rate as needed
+
+
 # Logging configuration
+LOG_FILE_PATH = os.path.join(BASE_DIR, 'logs', 'django.log')
+LOG_FILE_PATH = os.path.join(BASE_DIR, 'logs', 'django.log')
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/app/logs/django.log',  # Updated path
-            'maxBytes': 10 * 1024 * 1024,  # 10 MB
-            'backupCount': 5,
-            'formatter': 'verbose',
-        },
-    },
     'formatters': {
         'verbose': {
             'format': '{levelname} {asctime} {module} {message}',
             'style': '{',
         },
     },
+    'handlers': {},
     'loggers': {
         'django': {
-            'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
         },
+        'csp_reports': {
+            'level': 'ERROR',
+            'propagate': False,
+        },
     },
 }
+
+if log_to_file:
+    LOGGING['handlers']['file'] = {
+        'level': 'DEBUG',
+        'class': 'logging.handlers.RotatingFileHandler',
+        'filename': LOG_FILE_PATH,
+        'maxBytes': 10 * 1024 * 1024,  # 10 MB
+        'backupCount': 5,
+        'formatter': 'verbose',
+    }
+    # Only add 'file' handler to loggers if it's defined
+    LOGGING['loggers']['django']['handlers'] = ['file']
+
+if log_to_terminal:
+    LOGGING['handlers']['console'] = {
+        'level': 'DEBUG',
+        'class': 'logging.StreamHandler',
+        'formatter': 'verbose',
+    }
+    """
+    # Add 'console' handler to loggers if not already present and it's defined
+    if 'console' not in LOGGING['loggers']['django'].get('handlers', []):
+        LOGGING['loggers']['django'].setdefault('handlers', []).append('console')
+    if 'console' not in LOGGING['loggers']['csp_reports'].get('handlers', []):
+        LOGGING['loggers']['csp_reports'].setdefault('handlers', []).append('console')
+    """
+
+# If 'csp_file' handler is to be used, ensure it's defined
+if 'csp_file' in LOGGING['loggers']['csp_reports'].get('handlers', []):
+    LOGGING['handlers']['csp_file'] = {
+        'level': 'ERROR',
+        'class': 'logging.FileHandler',
+        'filename': LOG_FILE_PATH,
+        'formatter': 'verbose',
+    }
+
+
+
+
+# Added to allow for authentication based on user's email
+AUTHENTICATION_BACKENDS = [
+    'MyFin50d_project.authentication_backend.EmailAuthBackend',  # Update this to the actual path of the backend
+    'django.contrib.auth.backends.ModelBackend',  # Default ModelBackend for admin and others
+]
+
+# Added to make the template file in project_templates/ available to all apps
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'project_templates'],  
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',  # Ensure this is included
+                'django.contrib.auth.context_processors.auth',  # Ensure this is included
+                'django.contrib.messages.context_processors.messages',  # Ensure this is included
+                'django.template.context_processors.media',
+                ],
+        },
+    },
+]
