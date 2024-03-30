@@ -1,9 +1,8 @@
 import os
 
-CSS_CACHE_ENABLED = False
-DEBUG = True
+CSS_CACHE_ENABLED=False
+DEBUG=False
 
 # Logging configurations
-LOG_TO_CONSOLE = True
-LOG_TO_FILE = True
-USE_GOOGLE_CLOUD_LOGGING = False
+log_to_file=True
+log_to_terminal=True

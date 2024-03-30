@@ -35,19 +35,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Use .env file to set project environment, with 'dev' as the fallback
 SECRET_KEY = os.getenv('SECRET_KEY')
 PROJECT_ENV = os.getenv('ENVIRONMENT', 'development')
-DEBUG=True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '34.70.192.208']
 
-log_to_file = os.getenv('LOG_TO_FILE', 'False') == 'True'
-log_to_terminal = os.getenv('LOG_TO_TERMINAL', 'False') == 'True'
-logger = logging.getLogger('django')
-
-CSRF_COOKIE_SECURE=False # Must be True for deployment
-SECURE_SSL_REDIRECT=True # Must be True for deployment
+# Important security-related settings
+CSRF_COOKIE_SECURE=True # Must = True for deployment. Sends CSRF cookies only over HTTPS
+SECURE_SSL_REDIRECT=True # Must = True for deployment. If user tries to access via http, user is redirected to https
+SESSION_COOKIE_HTTPONLY=True  # Must = True for deployment. Prevents client-side JavaScript from accessing the session cookie
 SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO', 'https')
+X_FRAME_OPTIONS = 'DENY' # Must = True for deployment. Prevents framing of the site, equivalent to "frame-ancestors": ["'none'"] in CSP. Can also use 'SELF'
 
-print(f'running settings.py ... PROJECT_ENV is: { PROJECT_ENV }')
-print(f'running settings.py ... ALLOWED_HOSTS is: { ALLOWED_HOSTS }')
 
 # Set app mode according to setting in .env above
 if PROJECT_ENV == 'testing':
@@ -56,6 +52,14 @@ elif PROJECT_ENV == 'production':
     from .configs_project.config_prod import *
 else:
     from .configs_project.config_dev import *
+
+logger = logging.getLogger('django')
+
+# Sense check of critical settings
+print(f'running settings.py ... PROJECT_ENV is: { PROJECT_ENV }')
+print(f'running settings.py ... ALLOWED_HOSTS is: { ALLOWED_HOSTS }')
+print(f'running settings.py ... DEBUG is: { DEBUG }')
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -173,7 +177,7 @@ CSP_DEFAULTS = {
     "img-src": ["'self'", "data:", "https://127.0.0.1:8000", "https://financialmodelingprep.com/", "https://images.unsplash.com", "https://substackcdn.com"],
     "frame-src": ["'self'", "https://www.youtube.com"],
     "connect-src": ["'self'", "https://substackapi.com", "https://www.google-analytics.com"],
-    # Add more directives as needed
+    "frame-ancestors": ["'none'"], # Prevents framing of the site, equivalent to setting X_FRAME_OPTIONS = 'DENY'.  "'none'" allows no framing and "'self'" allows self framing 
 }
 
 CSP_REPORT_URI = 'utils/csp_violation_report'
@@ -225,13 +229,6 @@ if log_to_terminal:
         'class': 'logging.StreamHandler',
         'formatter': 'verbose',
     }
-    """
-    # Add 'console' handler to loggers if not already present and it's defined
-    if 'console' not in LOGGING['loggers']['django'].get('handlers', []):
-        LOGGING['loggers']['django'].setdefault('handlers', []).append('console')
-    if 'console' not in LOGGING['loggers']['csp_reports'].get('handlers', []):
-        LOGGING['loggers']['csp_reports'].setdefault('handlers', []).append('console')
-    """
 
 # If 'csp_file' handler is to be used, ensure it's defined
 if 'csp_file' in LOGGING['loggers']['csp_reports'].get('handlers', []):
