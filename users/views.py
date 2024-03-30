@@ -1,10 +1,27 @@
 # Provides ability to authenticate username+pw, log a user in, log a user out.
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
+from .forms.forms import LoginForm
 import logging
+import os
 logger = logging.getLogger('django')
+
+#-------------------------------------------------------------------------------
+
+# Helper functions to be externalized
+
+# Generates a nonce to work with Talisman-managed CSP
+def generate_nonce():
+    logger.debug('running users app, generate_nonce() ... generated nonce')
+    return os.urandom(16).hex()
+
+
+
+#-------------------------------------------------------------------------------
 
 def index(request):
     logger.debug('running users app, index ... view started')
@@ -22,44 +39,60 @@ def index(request):
 #----------------------------------------------------------------------------------
 
 def login_view(request):
-    logger.debug('running users app, login_view ... view started')
+    logger.debug(f'running users app, login_view ... view started')
+
+    nonce = generate_nonce()
+    logger.debug(f'running users app, login_view ... generated nonce of: { nonce }')
+
+    # Instantiate the form with request.POST or no data depending on the request type
+    form = LoginForm(request.POST or None)
 
     if request.method == "POST":
         logger.debug('running users app, login_view ... user submitted via POST')
         
-        # Assigns to variables the username and password passed in via the form in login.html
-        email = request.POST["username"]
-        password = request.POST["password"]
+        # Do the following if submission=POST && submission passes validation...
+        if form.is_valid():
+            logger.debug('running users app, login_view ... user submitted via POST and form passed validation')
         
-        # Runs the authenticate function on username and password and saves the result as the variable "user"
-        user = authenticate(request, email=email, password=password)
+            # Assigns to variables the username and password passed in via the form in login.html
+            email = form.cleaned_data["email"]
+            password = form.cleaned_data["password"]
         
-        if user is not None:
-            logger.debug('running users app login_view ... user found in DB')
-            
-            # This logs the user in if a matching username+password pair is found.
-            login(request, user)
-            logger.debug('running users app login_view ... user logged in, reversing to index')
+            # Runs the authenticate function on username and password and saves the result as the variable "user"
+            user = authenticate(request, email=email, password=password)
+        
+            if user is not None:
+                logger.debug('running users app login_view ... user found in DB')
+                
+                # This logs the user in if a matching username+password pair is found.
+                login(request, user)
+                logger.debug('running users app login_view ... user logged in, reversing to index')
+                return HttpResponseRedirect(reverse('index'))
+        
+            # If user = None (e.g. user is not found in DB)    
+            else:
+                # If the user is None, that means that the user has not yet 
+                # registered or has entered the wrong username and/or password.
+                # In that case, we will render the login page with the message: Invalid credentials.
+                logger.debug('running users app login_view ... user not found in DB')
+                messages.error(request, 'Error: Invalid credentials.')
+                return render(request, "users/login.html", {"form": form})
 
-            return HttpResponseRedirect(reverse("index"))
-        
-        # If user = None (e.g. user is not found in DB)    
+        # Do the following if submission=POST && submission fails validation...
         else:
-            # If the user is None, that means that the user has not yet 
-            # registered or has entered the wrong username and/or password.
-            # In that case, we will render the login page with the message: Invalid credentials.
-            logger.debug('running users app login_view ... user not found in DB')
-            return render(request, "users/login.html", {
-                "message": "Invalid credentials."
-            })
+            logger.debug('running users app, login_view ... user submitted via POST and form failed validation')
+            messages.error(request, 'Error: Invalid input. Please see the red text below for assistance.')
+            return render(request, "users/login.html", {"form": form})
+
     else:
         logger.debug('running users app login_view ... user arrived via GET')
         # If not submitted via post (e.g. we are not handling data submitted 
         # by the user via the form), then display the login page.
-        return render(request, "users/login.html")
+        return render(request, "users/login.html", {"form": form})
 
 #--------------------------------------------------------------------------------
 
+@login_required(login_url="login")
 def logout_view(request):
     logger.debug('running users app, logout_view ... view started')
 

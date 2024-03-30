@@ -39,6 +39,19 @@ nav .navbar-brand .green
   font-style: italic;
 }
 
+.form-control::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+  text-align: center;
+  opacity: 1; /* Firefox */
+}
+
+.form-control:-ms-input-placeholder { /* Internet Explorer 10-11 */
+  text-align: center;
+}
+
+.form-control::-ms-input-placeholder { /* Microsoft Edge */
+  text-align: center;
+}
+
 .quote-changes {
   font-size: calc(1.375rem + 1.5vw); /* REPLICATES H1 */
   font-weight: bold;

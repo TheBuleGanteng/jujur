@@ -10,10 +10,11 @@
         <!-- login form -->
         <form action='{% url "users:login" %}' method='post'>
             {% csrf_token %}
+            {{ form.non_field_errors }}
             
             <!-- email -->
             <div class='mb-3'>
-                <input type="email" name="{{ form.email.name }}" value="{{ form.email.value|default:'' }}" class="form-control mx-auto w-auto" id="email" autocomplete="off" placeholder="Email address">
+                {{ form.email }}
             </div>
             <div class='mb-3'>
                 {% if form.email.errors %}
@@ -28,7 +29,7 @@
 
             <!-- password -->
             <div class='mb-3'>
-                <input type="password" name="{{ form.password.name }}" class="form-control mx-auto w-auto" id="password" autocomplete="off" placeholder="Password">
+                {{ form.password }}
             </div>
             <div class='mb-3'>
                 {% if form.password.errors %}
