@@ -26,9 +26,8 @@ def csp_violation_report(request):
 # ---------------------------------------------------------------------
 
 
-# Readiness check used in deployment
-# Readiness check (needed for serving via GCP)
-def readiness_check(request):
+# Readiness check (needed for serving via GCP) and used for JS that resets the logout timer.
+def readiness_check_view(request):
     logger = logging.getLogger('django')
     logger.debug(f'running utils app, readiness_check view ... logger set to django')
     logger.debug(f'running utils app, readiness_check view ... view started')
@@ -37,11 +36,13 @@ def readiness_check(request):
         # Your check logic here
         # For example: check_database_connection()
         logger.info("Readiness check passed")
+        response_data = {'status': 'ready'}
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
         return HttpResponse('Service Unavailable', status=503)
+        response_data = {'status': 'unavailable'}
 
     logger.debug(f'running utils app, readiness_check view ... view completed w/ HttpResponse of "Ready" and status=200')
-    return HttpResponse('Ready', status=200)
+    return JsonResponse(response_data)
 
 

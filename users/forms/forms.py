@@ -1,5 +1,10 @@
-from .custom_fields import CharFieldRegexPhone, CharFieldRegexStrict, CharFieldTitleCaseRegexStrict, EmailFieldLowerRegexStrict
+from .custom_fields import *
+import decimal
 from django import forms
+from django.core.exceptions import ValidationError
+from .form_fields import *
+from ..models import UserProfile
+__all__ = ['LoginForm', 'PasswordChangeForm', 'PasswordResetForm', 'PasswordResetConfirmationForm', 'ProfileForm', 'RegisterForm']
 
 #------------------------------------------------------------------------
 
@@ -26,125 +31,91 @@ class LoginForm(forms.Form):
 
 #------------------------------------------------------------------------
 
-class RegisterForm(forms.Form):
-    name_first = CharFieldTitleCaseRegexStrict(
-        label='First name:', 
-        max_length=25,
-        widget=forms.TextInput(attrs={
-            'autocomplete': 'off',
-            'class': 'form-control',
-            #'placeholder': 'Your first name',
-            })
-        )
+class PasswordChangeForm(forms.Form):
     
-    name_last = CharFieldTitleCaseRegexStrict(
-        label='Last name:', 
-        max_length=25,
-        widget=forms.TextInput(attrs={
-            'autocomplete': 'off',
-            'class': 'form-control',
-            #'placeholder': 'Your last name',
-            })
-        )
+    email=email
+    password_old=password_old
+    password=password
+    password_confirmation=password_confirmation
+    
+    def clean(self):
+        cleaned_data = super().clean() # Use of super().clean() allows Django's built-in validation to happen first, and then the additional custom validation below is applied to that cleaned data.
+        password_old = cleaned_data.get("password_old")
+        password = cleaned_data.get('password')
+        password_confirmation = cleaned_data.get('password_confirmation')
 
-    username = CharFieldTitleCaseRegexStrict(
-        label='Username:', 
-        max_length=25,
-        widget=forms.TextInput(attrs={
-            'autocomplete': 'off',
-            'class': 'form-control',
-            #'placeholder': 'Your username',
-            })
-        ) 
+        if password and password_confirmation and password != password_confirmation:
+            self.add_error('password_confirmation', 'Error: Password and Confirm Password do not match')
 
-    email = EmailFieldLowerRegexStrict(
-        label='Email address:', 
-        max_length=25,
-        widget=forms.EmailInput(attrs={
-            'autocomplete': 'off',
-            'class': 'form-control',
-            #'placeholder': 'Your email address',
-            })
-        )
+        if password_old and password and password_old == password:
+            self.add_error('password', 'Error: New password must differ from current password')
 
-    password = forms.CharField(
-        label='Password:', 
-        max_length=50,
-        widget=forms.PasswordInput(attrs={
-            'autocomplete': 'off',
-            'class': 'form-control',
-            #'placeholder': 'Your password',
-            })
-        )
+        return cleaned_data
 
-    password_confirmation = forms.CharField(
-    label='Confirm Password:',
-    max_length=50,
-    widget=forms.PasswordInput(attrs={
-        'autocomplete': 'off',
-        'class': 'form-control',
-        # 'placeholder': 'Confirm your password',
-        })
-    )
+#-------------------------------------------------------------------------
 
-    cash_initial = DecimalField(
-        label='Initial cash deposit:', 
-        max_digits=10,
-        decimal_places=2,
-        initial=10000.00,
-        widget=forms.PasswordInput(attrs={
-            'autocomplete': 'off',
-            'class': 'form-control',
-            #'placeholder': 'Your initial cash deposit (USD $XX.XX)',
-            'step': '0.01',  # This allows input of decimal values
-            })
-        ) 
+class PasswordResetForm(forms.Form):
+    
+    email=email
 
-    accounting_method = forms.ChoiceField(
-        label='Accounting method:',
-        choices=[('FIFO', 'FIFO'), ('LIFO', 'LIFO')],
-        initial='FIFO',
-        required=False,
-        widget=forms.Select(attrs={
-            'class': 'form-control',
-        })
-    )
+    def clean(self):
+        cleaned_data = super().clean() # Use of super().clean() allows Django's built-in validation to happen first, and then the additional custom validation below is applied to that cleaned data.
+        return cleaned_data
 
-    tax_loss_offsets = forms.ChoiceField(
-        label='Accounting method:',
-        choices=[('On', 'On'), ('Off', 'Off')],
-        initial='On',
-        required=False,
-        widget=forms.Select(attrs={
-            'class': 'form-control',
-        })
-    )
+#-------------------------------------------------------------------------
 
-    tax_rate_STCG = forms.DecimalField(
-        label='Tax rate, short-term capital gains:',
-        required=False,  # Makes the field optional
-        initial=30.00,  # Default value
-        min_value=0,  # Minimum value
-        max_value=50,  # Maximum value
-        decimal_places=2,  # Number of decimal places
-        widget=forms.NumberInput(attrs={
-            'step': 0.50,  # Step for the input
-            'class': 'form-control',
-        })
-    )
+class PasswordResetConfirmationForm(forms.Form):
 
-    tax_rate_LTCG = forms.DecimalField(
-        label='Tax rate, long-term capital gains:',
-        required=False,  # Makes the field optional
-        initial=15.00,  # Default value
-        min_value=0,  # Minimum value
-        max_value=50,  # Maximum value
-        decimal_places=2,  # Number of decimal places
-        widget=forms.NumberInput(attrs={
-            'step': 0.50,  # Step for the input
-            'class': 'form-control',
-        })
-    )
+    password=password
+    password_confirmation=password_confirmation
+
+    def clean(self):
+        cleaned_data = super().clean() # Use of super().clean() allows Django's built-in validation to happen first, and then the additional custom validation below is applied to that cleaned data.
+        password = cleaned_data.get("password")
+        password_confirmation = cleaned_data.get("password_confirmation")
+
+        if password and password_confirmation and password != password_confirmation:
+            self.add_error('password_confirmation', "Error: Password and Confirm Password do not match")
+
+        return cleaned_data
+
+#-------------------------------------------------------------------------
+
+class ProfileForm(forms.ModelForm):
+    first_name=first_name
+    last_name=last_name
+    username_old=username_old
+    username=username
+    email=email
+    accounting_method=accounting_method
+    tax_loss_offsets=tax_loss_offsets
+    tax_rate_STCG=tax_rate_STCG
+    tax_rate_LTCG=tax_rate_LTCG
+
+    class Meta:
+        model = UserProfile
+        fields = ['first_name', 'last_name', 'username', 'email', 'accounting_method', 'tax_loss_offsets', 'tax_rate_STCG', 'tax_rate_LTCG']
+        
+#------------------------------------------------------------------------
+
+class RegisterForm(forms.Form):
+    first_name=first_name
+    last_name=last_name
+    username=username
+    email=email
+    password=password
+    password_confirmation=password_confirmation
+    cash_initial=cash_initial
+    accounting_method=accounting_method
+    tax_loss_offsets=tax_loss_offsets
+    tax_rate_STCG=tax_rate_STCG
+    tax_rate_LTCG=tax_rate_LTCG
+
+    def __init__(self, *args, **kwargs):
+        super(RegisterForm, self).__init__(*args, **kwargs)
+        # Set required=True for all fields in this form
+        for field_name in self.fields:
+            self.fields[field_name].required = True
 
     def clean(self):
         cleaned_data = super().clean() # Use of super().clean() allows Django's built-in validation to happen first, and then the additional custom validation below is applied to that cleaned data.

@@ -31,11 +31,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
-
+#localhost
 # Use .env file to set project environment, with 'dev' as the fallback
 SECRET_KEY = os.getenv('SECRET_KEY')
 PROJECT_ENV = os.getenv('ENVIRONMENT', 'development')
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '34.70.192.208']
+ALLOWED_HOSTS = ['', '127.0.0.1', '34.70.192.208',['*']]
+TOKEN_TIMEOUT = int(os.getenv('TOKEN_TIMEOUT')) # Sets the expiration of a unique token generated via Django's PasswordResetTokenGenerator
+SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE'))
+SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv('SESSION_EXPIRE_AT_BROWSER_CLOSE')
+SESSION_SAVE_EVERY_REQUEST = os.getenv('SESSION_SAVE_EVERY_REQUEST')
 
 # Important security-related settings
 CSRF_COOKIE_SECURE=True # Must = True for deployment. Sends CSRF cookies only over HTTPS
@@ -43,7 +47,6 @@ SECURE_SSL_REDIRECT=True # Must = True for deployment. If user tries to access v
 SESSION_COOKIE_HTTPONLY=True  # Must = True for deployment. Prevents client-side JavaScript from accessing the session cookie
 SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO', 'https')
 X_FRAME_OPTIONS = 'DENY' # Must = True for deployment. Prevents framing of the site, equivalent to "frame-ancestors": ["'none'"] in CSP. Can also use 'SELF'
-
 
 # Set app mode according to setting in .env above
 if PROJECT_ENV == 'testing':
@@ -77,6 +80,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'django_extensions',
+    # Third party apps 
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
@@ -172,7 +177,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # CSP Settings
 CSP_DEFAULTS = {
 "default-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://www.googletagmanager.com", "https://www.google-analytics.com"],
-    "script-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://code.jquery.com/", "https://www.googletagmanager.com", "https://www.google-analytics.com", "https://substackapi.com", "{nonce}"],
+    "script-src": ["'self'", "https://127.0.0.1:8000", 'https://ajax.googleapis.com', "https://cdn.jsdelivr.net", "https://code.jquery.com/", "https://www.googletagmanager.com", "https://www.google-analytics.com", "https://substackapi.com", "{nonce}"],
     "style-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
     "img-src": ["'self'", "data:", "https://127.0.0.1:8000", "https://financialmodelingprep.com/", "https://images.unsplash.com", "https://substackcdn.com"],
     "frame-src": ["'self'", "https://www.youtube.com"],
@@ -187,8 +192,13 @@ CSP_REPORT_SAMPLING = 1.0  # Adjust the sampling rate as needed
 
 
 # Logging configuration
-LOG_FILE_PATH = os.path.join(BASE_DIR, 'logs', 'django.log')
-LOG_FILE_PATH = os.path.join(BASE_DIR, 'logs', 'django.log')
+# Ensure the logs directory exists
+LOGS_DIR = BASE_DIR / 'logs'
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+# Define the log file path
+LOG_FILE_PATH = LOGS_DIR / 'django.log'
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -201,43 +211,48 @@ LOGGING = {
     'handlers': {},
     'loggers': {
         'django': {
+            'handlers': [],
             'level': 'DEBUG',
             'propagate': True,
         },
         'csp_reports': {
+            'handlers': [],
             'level': 'ERROR',
             'propagate': False,
         },
     },
 }
 
+# Add file handler if logging to file is enabled
 if log_to_file:
     LOGGING['handlers']['file'] = {
         'level': 'DEBUG',
         'class': 'logging.handlers.RotatingFileHandler',
-        'filename': LOG_FILE_PATH,
+        'filename': str(LOG_FILE_PATH),
         'maxBytes': 10 * 1024 * 1024,  # 10 MB
         'backupCount': 5,
         'formatter': 'verbose',
     }
-    # Only add 'file' handler to loggers if it's defined
-    LOGGING['loggers']['django']['handlers'] = ['file']
+    LOGGING['loggers']['django']['handlers'].append('file')
 
+# Add console handler if logging to the terminal is enabled
 if log_to_terminal:
     LOGGING['handlers']['console'] = {
         'level': 'DEBUG',
         'class': 'logging.StreamHandler',
         'formatter': 'verbose',
     }
+    LOGGING['loggers']['django']['handlers'].append('console')
 
-# If 'csp_file' handler is to be used, ensure it's defined
+# Add csp_file handler if specified in the csp_reports logger's handlers
 if 'csp_file' in LOGGING['loggers']['csp_reports'].get('handlers', []):
     LOGGING['handlers']['csp_file'] = {
         'level': 'ERROR',
         'class': 'logging.FileHandler',
-        'filename': LOG_FILE_PATH,
+        'filename': str(LOG_FILE_PATH),
         'formatter': 'verbose',
     }
+    LOGGING['loggers']['csp_reports']['handlers'].append('csp_file')
 
 
 

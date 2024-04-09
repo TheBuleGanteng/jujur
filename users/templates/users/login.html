@@ -15,7 +15,7 @@
     </div>
     <!-- /boostrap5 loading spinner -->
 
-    <div class='container-fluid text-center'>
+    <div class='container-fluid text-center pt-2 pb-5'>
         
         <!-- login form -->
         <form action='{% url "users:login" %}' method='post'>
@@ -57,9 +57,9 @@
         <!-- /login form -->
 
         <!-- links to register or reset pw -->
-        <a href='{# url "register" #}#'>New user? Click here to create an account</a>
+        <a href='{% url "users:register" %}'>New user? Click here to create an account</a>
         <br>
-        <a href='{# url "password_reset_request" #}#'>Forgot your password? Click here to reset</a>
+        <a href='{% url "users:password_reset" %}'>Forgot your password? Click here to reset</a>
         <!-- /links to register or reset pw -->
 
     </div>

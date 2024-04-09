@@ -16,13 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from utils.views import readiness_check #This is done to allow readiness_check (defined in utils/views.py) access to the root url
+from users.views import login_view
+from utils.views import readiness_check_view #This is done to allow readiness_check (defined in utils/views.py) access to the root url
 
 urlpatterns = [
-    #path('brokerage/', include('brokerage.urls')),
+    path('brokerage/', include('brokerage.urls')),
     path('', include(('users.urls', 'users'), namespace='users')),
     path("admin/", admin.site.urls),
     path('csp/', include('csp.urls', namespace='csp')),
-    path('readiness_check/', readiness_check, name='readiness_check'),
+    path('readiness_check/', readiness_check_view, name='readiness_check'),
     path('utils/', include(('utils.urls', 'utils'), namespace='utils')),
 ]

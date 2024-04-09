@@ -1,6 +1,6 @@
-// Global CSRF Token Variable
+// Global CSRF Token Variable ----------------------------------------------------------
 let csrfToken = ''; 
-let csrfTokenInput = document.querySelector('input[name="csrf_token"]');
+let csrfTokenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
 if (csrfTokenInput) {
     csrfToken = csrfTokenInput.value;
     console.log("CSRF Token set:", csrfToken);
@@ -9,6 +9,7 @@ if (csrfTokenInput) {
 }
 
 
+// Bootstrap's spinner while loading ---------------------------------------------------
 window.addEventListener('load', function() {
     var spinner = document.getElementById('loadingSpinner');
     if (spinner) {
@@ -19,9 +20,173 @@ window.addEventListener('load', function() {
     }
 });
 
+
+// Load DOM before doing all JS below -------------------------------------------------
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM content loaded in myFinance50.js.');
-    console.log('this is a console.log from myFinance50.js....myFinance50.js loaded successfully');
+    
+
+
+    // Allow for tooltip text to appear on any page where it is located. 
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+
+    
+    // Show the value of a slider wherever it appears on a page
+    if (document.querySelector('.form-control-range[type="range"]')) {
+        console.log('from myFinance50.js, adjusting slider output .... ');
+
+        // Select all slider inputs by class
+        const sliders = document.querySelectorAll('.form-control-range[type="range"]');
+
+        sliders.forEach(function(slider) {
+            // Find the output element associated with this slider
+            const output = slider.nextElementSibling;
+
+            // Update the output's value when the slider's value changes
+            slider.oninput = function() {
+                output.value = parseFloat(this.value).toFixed(2) + '%';
+            }
+        });
+    };
+
+
+    // Show timeout modal warning user about upcoming timeout.
+    // Shows popup warning before user is logged out due to inactivity
+    var SESSION_COOKIE_AGE_SEC = 900;
+
+    // Timer to track inactivity
+    var inactivityTimer;
+
+    // Function to show the timeout modal in layout.html
+    function showModal() {
+        $('#staticBackdrop').modal('show');
+    }
+
+    // Function to reset the inactivity timer
+    function resetTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(showModal, (SESSION_COOKIE_AGE_SEC - 1 * 60) * 1000); // Show modal 5 minutes before timeout
+    }
+
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            resetTimer();
+        });
+    });
+
+    // Extend session button in the modal
+    var extendButton = document.querySelector('[name="timeout-extend-button"]');
+    if (extendButton) { // Check if the extend session button exists before adding event listener
+        extendButton.addEventListener('click', function() {
+            var readinessCheckUrl = this.getAttribute('data-readiness-check-url'); // Get the URL from the data attribute
+
+            // Implement AJAX request to the readiness_check view that resets the session timer
+            $.get(readinessCheckUrl, function(data) {
+                if (data.status === 'ready') {
+                    resetTimer();
+                    $('#staticBackdrop').modal('hide'); // Hide the modal
+                }
+            });
+        });
+    }
+
+    // Log out button in the modal
+    var logoutButton = document.querySelector('[name="timeout-logout-button"]');
+    if (logoutButton) { // Check if the logout button exists before adding event listener
+        logoutButton.addEventListener('click', function() {
+            var logoutUrl = this.getAttribute('data-logout-url'); // Get the logout URL from the data attribute
+            window.location.href = logoutUrl; // Redirect to the logout URL
+        });
+    }
+
+    // Start the inactivity timer when the page loads, but only if the user is authenticated
+    if (document.querySelector('[name="timeout-extend-button"]') || document.querySelector('[name="timeout-logout-button"]')) {
+        window.onload = resetTimer;
+    }
+
+
+
+
+    // Function to format the value of fields with class='form-control USD' as $X,XXX.XX
+    function formatInputValue(event) {
+        let element = event.target; // The element that triggered the event
+        console.log(`formatting '.form-control.USD' element with value: ${element.value}`); // Logs the initial value
+
+        // Remove any non-numeric characters except for the decimal point
+        let numericValue = element.value.replace(/[^0-9.]/g, '');
+        
+        // Attempt to convert the cleaned string to a float
+        let unconvertedValue = parseFloat(numericValue);
+        if (!isNaN(unconvertedValue)) { // Check if the conversion was successful
+            // Format the value with commas and 2 decimal places
+            let convertedValue = unconvertedValue.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+
+            // Update the element's value with the formatted string, including a dollar sign
+            element.value = '$' + convertedValue;
+            console.log(`formatted value: ${convertedValue}`); // Logs the formatted value
+        } else {
+            console.error('Invalid input detected');
+        }
+    }
+
+    // Attach the 'blur' event listener to all '.form-control.USD' elements
+    document.querySelectorAll('.form-control.USD').forEach(function(element) {
+        element.addEventListener('blur', formatInputValue);
+    });
+
+
+
+    // Function to un-format the value of fields with class='form-control USD' before form submission
+    function unFormatUSDInputValue(element) {
+        console.log(`un-formatting '.form-control.USD' element with value: ${element.value}`); // Logs the initial value
+
+        // Remove any non-numeric characters except for the decimal point
+        let numericValue = element.value.replace(/[^0-9.]/g, '');
+
+        // Attempt to convert the cleaned string to a float
+        let unformattedValue = parseFloat(numericValue);
+        if (!isNaN(unformattedValue)) { // Check if the conversion was successful
+            // Ensure the value has 2 decimal places without any formatting
+            let convertedValue = unformattedValue.toFixed(2);
+
+            // Update the element's value with the unformatted decimal string
+            element.value = convertedValue;
+            console.log(`unformatted value: ${convertedValue}`); // Logs the unformatted value
+        } else {
+            console.error('Invalid input detected');
+        }
+    }
+
+    // Formats USD user inputs into the correct format
+    // Check if there are any elements with the class 'form-control USD' on the page
+    var usdInputElements = document.querySelectorAll('.form-control.USD');
+    if (usdInputElements.length > 0) {
+        // If such elements exist, attach the submit event listener to the form
+        // Assuming the form has a specific ID or class, for example 'register-form'
+        var form = document.querySelector('#register-form');
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                // Prevent the form from submitting immediately
+                event.preventDefault();
+
+                // Run the unFormatUSDInputValue function on all '.form-control.USD' elements
+                usdInputElements.forEach(function(element) {
+                    unFormatUSDInputValue(element);
+                });
+
+                // After processing, submit the form programmatically
+                form.submit();
+            });
+        }
+    }
+
     
     
     // Declaration of global variables and functions------------------------------------------------------------
@@ -29,14 +194,19 @@ document.addEventListener('DOMContentLoaded', function() {
     window.jsSymbolValidation = jsSymbolValidation
     window.jsSharesValidation = jsSharesValidation
     // password_change
-    // password_reset_request
-    // password_reset_request_new
+    // password_reset
+    // password_reset_confirmation
     // profile
     window.jsShowHiddenNameField = jsShowHiddenNameField;
     window.jsShowHiddenUsernameField = jsShowHiddenUsernameField; 
+    
+    /* POTENTIALLY REMOVE
     window.jsUpdateTaxRateDisplaySTCG = jsUpdateTaxRateDisplaySTCG;
     window.jsUpdateTaxRateDisplayLTCG = jsUpdateTaxRateDisplayLTCG;
-    
+    POTENTIALLY REMOVE */
+
+
+
     // register
     window.jsPasswordValidation = jsPasswordConfirmationValidation
     window.jsPasswordConfirmationValidation = jsPasswordConfirmationValidation;
@@ -44,32 +214,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make the following variables globally accessible 
     let initial_accounting_method;
     let initial_tax_loss_offsets;
+    /* POTENTIALLY REMOVE
     let initial_tax_rate_STCG_value;
     let initial_tax_rate_LTCG_value;
+    */
     let debounce_timeout = 200;
     let symbolValidationPassed = false;
     let sharesValidationPassed = false;
     let isButtonClicked = false;
+    
+    if (document.getElementById('id_accounting_method')) {        
+        initial_accounting_method = document.getElementById('id_accounting_method').value;
+    }
+    if (document.getElementById('id_tax_loss_offsets')) {        
+        initial_tax_loss_offsets = document.getElementById('id_tax_loss_offsets').value;
+    }
 
-    if (document.getElementById('accounting_method')) {        
-        initial_accounting_method = document.getElementById('accounting_method').value;
-    }
-    if (document.getElementById('tax_loss_offsets')) {        
-        initial_tax_loss_offsets = document.getElementById('tax_loss_offsets').value;
-    }
+    /* POTENTIALLY REMOVE
     if (document.getElementById('tax_rate_STCG_value')) {
         initial_tax_rate_STCG_value = parseFloat(document.getElementById('tax_rate_STCG_value').innerText.replace('%', ''));
     } 
     if (document.getElementById('tax_rate_LTCG_value')) {
         initial_tax_rate_LTCG_value = parseFloat(document.getElementById('tax_rate_LTCG_value').innerText.replace('%', ''));
     }
+    */
 
-    // Allow for tooltip text to appear on any page where it is located. 
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-
+    
 
     // Set debounce function globally
     // Debounce function
@@ -142,38 +312,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // /javascript for buy ------------------------------------------
 
 
+    
     // javascript for password_change ------------------------------------------
     if (window.location.href.includes('/password_change')) {
         console.log("Running myFinance50.js for /password_change... ");
 
         // Pulls in elements if they exist on page and assigns them to variables
-        var email = document.getElementById('email');
+        var email = document.getElementById('id_email');
         var password_old = document.getElementById('password_old');
-        var password = document.getElementById('password');
-        var password_confirmation = document.getElementById('password_confirmation');
+        var password = document.getElementById('id_password');
+        var password_confirmation = document.getElementById('id_password_confirmation');
 
         // Lists the functions to run if the given elements are on the page
         if (email) {
-            document.getElementById('email').addEventListener('input', function() {
+            email.addEventListener('input', function() {
                 jsEnablePasswordChangeSubmitButton();
             });
         }
 
         if (password_old) {
-            document.getElementById('password_old').addEventListener('input', function() {
+            password_old.addEventListener('input', function() {
                 jsEnablePasswordChangeSubmitButton();
             });
         }
 
         if (password) {
-            document.getElementById('password').addEventListener('input', function() {
+            password.addEventListener('input', function() {
                 jsPasswordValidation();
                 jsEnablePasswordChangeSubmitButton();
             });
         }
 
         if (password_confirmation) {
-            document.getElementById('password_confirmation').addEventListener('input', function() {
+            password_confirmation.addEventListener('input', function() {
                 jsPasswordConfirmationValidation();
                 jsEnablePasswordChangeSubmitButton();
             });
@@ -183,46 +354,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // javascript for password_request_reset----------------------------------
-    if (window.location.pathname === '/password_reset_request') {
-        console.log("Running myFinance50.js for /password_reset_request... ");
+    if (window.location.pathname === '/password-reset') {
+        console.log("Running myFinance50.js for /password_reset... ");
 
         // Pulls in elements if they exist on page and assigns them to variables
-        var email = document.getElementById('email')
+        var email = document.getElementById('id_email')
 
         // Run functions if given elements are present on the page
         if (email) {
-            document.getElementById('email').addEventListener('input', function() {
-                jsEnablePasswordResetRequestSubmitButton();
+            email.addEventListener('input', function() {
+                jsEnablePasswordResetSubmitButton();
             });
         }
     }
     // /javascript for password_request_reset---------------------------------
 
     
-    // javascript for password_request_reset_new------------------------------
-    if (window.location.href.includes('/password_reset_request_new')) {
+    // javascript for password_reset_confirmation------------------------------
+    if (window.location.href.includes('/password-reset-confirmation')) {
         console.log("Running myFinance50.js for /password_reset_request_new... ");
 
         // Pulls in elements if they exist on page and assigns them to variables
-        var password = document.getElementById('password')
-        var password_confirmation = document.getElementById('password_confirmation')
+        var password = document.getElementById('id_password')
+        var password_confirmation = document.getElementById('id_password_confirmation')
 
         // Run functions if given elements are present on the page
         if (password) {
-            document.getElementById('password').addEventListener('input', function() {
+            password.addEventListener('input', function() {
                 jsPasswordValidation();
-                jsEnablePasswordResetRequestNewSubmitButton();
+                jsEnablePasswordRequestConfirmationSubmitButton();
             });
         }
 
         if (password_confirmation) {
-            document.getElementById('password_confirmation').addEventListener('input', function() {
+            password_confirmation.addEventListener('input', function() {
                 jsPasswordConfirmationValidation();
-                jsEnablePasswordResetRequestNewSubmitButton();
+                jsEnablePasswordRequestConfirmationSubmitButton();
             });
         }
     }
-    // /javascript for password_request_reset_new-----------------------------
+    // /javascript for password_reset_confirmation-----------------------------
 
         
     // javascript for profile ------------------------------------------------
@@ -231,16 +402,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Pulls in elements if they exist on page and assigns them to variables
         var updateButtonNameFull = document.getElementById('updateButtonNameFull');
-        var name_first = document.getElementById('name_first');
-        var name_last = document.getElementById('name_last');
+        var first_name = document.getElementById('id_first_name');
+        var last_name = document.getElementById('id_last_name');
         var updateButtonUsername = document.getElementById('updateButtonUsername');
-        var username = document.getElementById('username');
-        var accounting_method = document.getElementById('accounting_method');
-        var tax_loss_offsets = document.getElementById('tax_loss_offsets');
-        var tax_rate_STCG= document.getElementById('tax_rate_STCG');
-        var tax_rate_STCG_value = document.getElementById('tax_rate_STCG_value');
-        var tax_rate_LTCG= document.getElementById('tax_rate_LTCG');
-        var tax_rate_LTCG_value = document.getElementById("tax_rate_LTCG_value");
+        var username = document.getElementById('id_username');
+        var accounting_method = document.getElementById('id_accounting_method');
+        var tax_loss_offsets = document.getElementById('id_tax_loss_offsets');
+        var tax_rate_STCG= document.getElementById('id_tax_rate_STCG');
+        var tax_rate_STCG_value = document.getElementById('tax_rate_STCG');
+        var tax_rate_LTCG= document.getElementById('id_tax_rate_LTCG');
+        var tax_rate_LTCG_value = document.getElementById("tax_rate_LTCG");
         var profileForm = document.querySelector('form'); // Selects the only form on the page
 
         // Capture the profile form submission
@@ -262,14 +433,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        if (name_first) {
-            document.getElementById('name_first').addEventListener('input', function() {
+        if (first_name) {
+            first_name.addEventListener('input', function() {
                 jsEnableProfileSubmitButton();
             });
         }
 
-        if (name_last) {
-            document.getElementById('name_last').addEventListener('input', function() {
+        if (last_name) {
+            last_name.addEventListener('input', function() {
                 jsEnableProfileSubmitButton();
             });
         }
@@ -282,40 +453,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (username) {
-            document.getElementById('username').addEventListener('input', function() {
+            document.getElementById('id_username').addEventListener('input', function() {
                 jsUsernameValidation(); 
                 jsEnableProfileSubmitButton();
             });
         }
 
             if (accounting_method) {
-                document.getElementById('accounting_method').addEventListener('input', function() { 
+                document.getElementById('id_accounting_method').addEventListener('input', function() { 
                     jsEnableProfileSubmitButton();
                 });
             }
 
             if (tax_loss_offsets) {
-                document.getElementById('tax_loss_offsets').addEventListener('input', function() { 
+                document.getElementById('id_tax_loss_offsets').addEventListener('input', function() { 
                     jsEnableProfileSubmitButton();
                 });
             }
 
         if (tax_rate_STCG) {
+            /* POTENTIALLY REMOVE
             jsUpdateTaxRateDisplaySTCG(tax_rate_STCG, tax_rate_STCG_value);
+            POTENTIALLY REMOVE */
             tax_rate_STCG.addEventListener('input', function() {
+                /* POTENTIALLY REMOVE
                 jsUpdateTaxRateDisplaySTCG(tax_rate_STCG, tax_rate_STCG_value);
+                POTENTIALLY REMOVE */
                 jsEnableProfileSubmitButton();
             });
         }
 
         if (tax_rate_LTCG) {
+            /* POTENTIALLY REMOVE
             jsUpdateTaxRateDisplayLTCG(tax_rate_STCG, tax_rate_STCG_value);
-            document.getElementById('tax_rate_LTCG').addEventListener('input', function() { 
+            POTENTIALLY REMOVE */
+            document.getElementById('id_tax_rate_LTCG').addEventListener('input', function() { 
+                /* POTENTIALLY REMOVE
                 jsUpdateTaxRateDisplayLTCG(tax_rate_LTCG, tax_rate_LTCG_value);
+                POTENTIALLY REMOVE */
                 jsEnableProfileSubmitButton();
             });
         }
 
+        /*
         const buyForm = document.querySelector('form[action="/buy"]');
         buyForm.addEventListener('submit', function (e) {
             e.preventDefault(); // Prevent form from submitting
@@ -327,6 +507,7 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmBuyButton.addEventListener('click', function () {
             buyForm.submit(); // Submit the form
         });
+        */
     }
     // /javascript for profile -----------------------------------------------
 
@@ -365,70 +546,83 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.location.href.includes('/register')) {
         console.log("Running myFinance50.js for /register... ");
         
-        var name_first = document.getElementById('name_first');
-        var name_last = document.getElementById('name_last');
-        var username = document.getElementById('username');
-        var email = document.getElementById('email');
-        var password = document.getElementById('password');
-        var password_confirmation = document.getElementById('password_confirmation');
-        var accounting_method = document.getElementById('accounting_method');
-        var tax_loss_offsets = document.getElementById('tax_loss_offsets');
-        var tax_rate_STCG= document.getElementById('tax_rate_STCG');
+        var first_name = document.getElementById('id_first_name');
+        var last_name = document.getElementById('id_last_name');
+        var username = document.getElementById('id_username');
+        var email = document.getElementById('id_email');
+        var password = document.getElementById('id_password');
+        var password_confirmation = document.getElementById('id_password_confirmation');
+        var accounting_method = document.getElementById('id_accounting_method');
+        var tax_loss_offsets = document.getElementById('id_tax_loss_offsets');
+        /* POTENTIALLY REMOVE 
+        var tax_rate_STCG= document.getElementById('id_tax_rate_STCG');
+        */
+        /* POTENTIALLY REMOVE
         var tax_rate_STCG_value = document.getElementById('tax_rate_STCG_value');
-        var tax_rate_LTCG= document.getElementById('tax_rate_LTCG');
-        var tax_rate_LTCG_value = document.getElementById("tax_rate_LTCG_value");
-        var registerForm = document.querySelector('form'); // Selects the only form on the page
+        */
+        /* POTENTIALLY REMOVE
+        var tax_rate_LTCG= document.getElementById('id_tax_rate_LTCG');
+        */
+         /* POTENTIALLY REMOVE
+        var tax_rate_LTCG_value = document.getElementById('tax_rate_LTCG_value');
+        */
+        var RegisterForm = document.querySelector('form'); // Selects the only form on the page
 
-        if (registerForm) {
-            registerForm.addEventListener('submit', function(event) {
+        /* POTENTIALLY REMOVE
+        if (RegisterForm) {
+            RegisterForm.addEventListener('submit', function(event) {
                 var taxRateSTCGValue = parseFloat(document.getElementById('tax_rate_STCG_value').innerText.replace('%', '')).toFixed(2);
                 var hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
                 hiddenInput.name = 'tax_rate_STCG'; // The name must match what you expect on the server side
                 hiddenInput.value = taxRateSTCGValue;
-                registerForm.appendChild(hiddenInput);
+                RegisterForm.appendChild(hiddenInput);
             });
         }
+        */
 
-        if (name_first) {
-            document.getElementById('name_first').addEventListener('input', function() {
+        if (first_name) {
+            first_name.addEventListener('input', function() {
                 jsEnableRegisterSubmitButton();
             });
         }
         
-        if (name_last) {
-            document.getElementById('name_last').addEventListener('input', function() {
+        if (last_name) {
+            last_name.addEventListener('input', function() {
                 jsEnableRegisterSubmitButton();
             });
         }
         
         if (email) {
-            document.getElementById('email').addEventListener('input', function() {
+            email.addEventListener('input', function() {
                 jsEmailValidation(); 
                 jsEnableRegisterSubmitButton();
             });
         }
 
         if (username) {
-            document.getElementById('username').addEventListener('input', function() {
+            username.addEventListener('input', function() {
+                console.log('input for username detected')
                 jsUsernameValidation(); 
                 jsEnableRegisterSubmitButton();
             });
         }
 
         if (password) {
-            document.getElementById('password').addEventListener('input', function() {
+            password.addEventListener('input', function() {
                 jsPasswordValidation();
                 jsEnableRegisterSubmitButton();
             });
         }
 
         if (password_confirmation) {
-            document.getElementById('password_confirmation').addEventListener('input', function() {
+            password_confirmation.addEventListener('input', function() {
                 jsPasswordConfirmationValidation();
                 jsEnableRegisterSubmitButton();
             });
         }
+        
+        /*
         if (tax_rate_STCG) {
             jsUpdateTaxRateDisplaySTCG(tax_rate_STCG, tax_rate_STCG_value);
             tax_rate_STCG.addEventListener('input', function() {
@@ -438,10 +632,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (tax_rate_LTCG) {
             jsUpdateTaxRateDisplayLTCG(tax_rate_STCG, tax_rate_STCG_value);
-            document.getElementById('tax_rate_LTCG').addEventListener('input', function() { 
+            document.getElementById('id_tax_rate_LTCG').addEventListener('input', function() { 
                 jsUpdateTaxRateDisplayLTCG(tax_rate_LTCG, tax_rate_LTCG_value);
             });
         }
+        */
+
     } 
     // /javascript for register ----------------------------------------------
 
@@ -492,23 +688,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function definitions -------------------------------------------------------------------    
 
-    // Function description: Provides real-time feedback to user re availability of username.
+    // Function description: Provides real-time feedback to user re availability of email.
     function jsEmailValidation() {
         return new Promise((resolve, reject) => {
-            var email = document.getElementById('email').value.trim();
+            var email = document.getElementById('id_email').value.trim();
             var email_validation = document.getElementById('email_validation');
-            console.log(`Running jsUsernameValidation()`);
-            console.log(`Running jsUsernameValidation()... email is: ${email}`);
-            console.log(`running jsUsernameValidation()... CSRF Token is: ${csrfToken}`); 
+            console.log(`Running jsEmailValidation()... email is: ${email}`);
 
             if (email === '') {
-                console.log(`Running jsUsernameValidation()... email ==='' (email is empty)`);
+                console.log(`Running jsEmailValidation()... email ==='' (email is empty)`);
                 email_validation.innerHTML = '';
                 email_validation.style.display = 'none';
                 submit_enabled = false;
                 resolve(submit_enabled);
             } else {
-                console.log(`Running jsUsernameValidation()... email != '' (email is not empty)`);
+                console.log(`Running jsEmailValidation()... email != '' (email is not empty)`);
                 fetch('/check_email_registered', {
                     method: 'POST',
                     body: new URLSearchParams({ 'user_input': email }),
@@ -519,20 +713,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(response => {
                     if (response.ok) {
-                        return response.text();
+                        return response.json();
                     } else {
                         throw new Error('Server responded with a non-200 status');
                     }
                 })
-                .then(text => {
-                    if (text === 'True') {
-                        email_validation.innerHTML = 'Email unavailable';
-                        email_validation.style.color = 'red';
-                        submit_enabled = false;
-                    } else {
-                        email_validation.innerHTML = 'Email available';
+                .then(data => {
+                    // Check the result from the server
+                    if (data.email === null) {
+                        email_validation.innerHTML = 'Email address available';
                         email_validation.style.color = '#22bd39';
                         submit_enabled = true;
+                    } else {
+                        email_validation.innerHTML = `Email address '${data.email}' is already registered.`;
+                        email_validation.style.color = 'red';
+                        submit_enabled = false;
                     }
                     email_validation.style.display = 'block';
                     resolve(submit_enabled);
@@ -548,17 +743,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
+
     // Function description: Provides real-time feedback to user whether input meets PW requirements.
     function jsPasswordValidation() {
         return new Promise((resolve, reject) => {
-            var password = document.getElementById('password').value.trim();
-            var password_confirmation = document.getElementById('password_confirmation').value.trim();
+            var password = document.getElementById('id_password').value.trim();
+            var password_confirmation = document.getElementById('id_password_confirmation').value.trim();
             var regLiMinTotChars = document.getElementById('pw_min_tot_chars_li');
             var regLiMinLetters = document.getElementById('pw_min_letters_li');
             var regLiMinNum = document.getElementById('pw_min_num_li');
             var regLiMinSym = document.getElementById('pw_min_sym_li');
             console.log(`Running jsPasswordValidation()`)
-            console.log(`running jsPasswordValidation()... CSRF Token is: ${csrfToken}`);
             
             // Helper function: resets color of element to black
             function resetColor(elements) {
@@ -586,7 +781,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return resolve(false);
             }
             // If password is not blank, then toss the value over to the /check_password_strength in app.py
-            fetch('/check_valid_password', {
+            fetch('/check_password_valid', {
                 method: 'POST',
                 body: new URLSearchParams({ 
                     'password': password,
@@ -639,8 +834,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function description: Provides real-time feedback to user if password == password_confirmation.
     function jsPasswordConfirmationValidation() {
         return new Promise((resolve, reject) => {
-            var password = document.getElementById('password').value.trim();
-            var password_confirmation = document.getElementById('password_confirmation').value.trim();
+            var password = document.getElementById('id_password').value.trim();
+            var password_confirmation = document.getElementById('id_password_confirmation').value.trim();
             var password_confirmation_validation_match = document.getElementById('password_confirmation_validation_match') 
             console.log(`Running jsPasswordConfirmationValidation()`)
             console.log(`running jsPasswordConfirmationValidation()... CSRF Token is: ${csrfToken}`);
@@ -671,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return resolve(false);
             }
             // If password is not blank, then toss the value over to the /check_password_strength in app.py
-            fetch('/check_valid_password', {
+            fetch('/check_password_valid', {
                 method: 'POST',
                 body: new URLSearchParams({ 
                     'password': password,
@@ -767,8 +962,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function description: When box is clicked, input boxes for fist and last name appear.
     function jsShowHiddenNameField() {
         var profile_hidden_name_container = document.getElementById('profile_hidden_name_container');
-        var name_first = document.getElementById('name_first');
-        var name_last = document.getElementById('name_last');
+        var first_name = document.getElementById('id_first_name');
+        var last_name = document.getElementById('id_last_name');
         var updateButtonNameFull = document.getElementById('updateButtonNameFull');
         console.log(`Running jsShowHiddenNameField()`)
         console.log(`Running jsShowHiddenNameField()...`)
@@ -779,8 +974,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (profile_hidden_name_container.style.display === 'block') {
             // Hide the container and clear the input field
             profile_hidden_name_container.style.display = 'none';
-            name_first.value = '';
-            name_last.value = '';
+            first_name.value = '';
+            last_name.value = '';
             updateButtonNameFull.innerHTML = 'update';
             updateButtonNameFull.color = 'grey';
             updateButtonNameFull.classList.remove('btn-secondary');
@@ -799,7 +994,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function jsShowHiddenUsernameField() {
         /* Pull in the relevant elements from the html */
         var profile_hidden_username_container = document.getElementById('profile_hidden_username_container');
-        var username = document.getElementById('username');
+        var username = document.getElementById('id_username');
         var updateButtonUsername = document.getElementById('updateButtonUsername');
         console.log(`Running jsShowHiddenUsernameField()`)
         console.log(`Running jsShowHiddenUsernameField()...`)
@@ -952,6 +1147,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }    
 
 
+
+    /* POTENTIALLY REMOVE
     // Function description: Enables and shows submit button provided the user has
     function jsUpdateTaxRateDisplaySTCG(slider, display) {
         var hiddenInput = document.getElementById('tax_rate_STCG_hidden');
@@ -963,7 +1160,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    
     // Function description: Enables and shows submit button provided the user has
     function jsUpdateTaxRateDisplayLTCG(slider, display) {
         var hiddenInput = document.getElementById('tax_rate_LTCG_hidden');
@@ -974,17 +1170,15 @@ document.addEventListener('DOMContentLoaded', function() {
             hiddenInput.value = newTaxRate;
         }
     }
+    POTENTIALLY REMOVE */ 
 
 
     // Function description: Real-time feedback re availability of username.
     function jsUsernameValidation() {
         return new Promise((resolve, reject) => {
-            var username = document.getElementById('username').value.trim();
+            var username = document.getElementById('id_username').value.trim();
             var username_validation = document.getElementById('username_validation');
-            console.log(`Running jsUsernameValidation()`);
             console.log(`Running jsUsernameValidation()... username is: ${username}`);
-            console.log(`running jsUsernameValidation()... CSRF Token is: ${csrfToken}`); 
-
             if (username === '') {
                 console.log(`Running jsUsernameValidation()... username ==='' (username is empty)`);
                 username_validation.innerHTML = '';
@@ -1003,20 +1197,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(response => {
                     if (response.ok) {
-                        return response.text();
+                        return response.json();
                     } else {
                         throw new Error('Server responded with a non-200 status');
                     }
                 })
-                .then(text => {
-                    if (text === 'True') {
-                        username_validation.innerHTML = 'Username unavailable';
-                        username_validation.style.color = 'red';
-                        submit_enabled = false;
-                    } else {
+                .then(data => {
+                    // Check the result from the server
+                    if (data.username === null) {
                         username_validation.innerHTML = 'Username available';
                         username_validation.style.color = '#22bd39';
                         submit_enabled = true;
+                    } else {
+                        username_validation.innerHTML = `Username '${data.username}' is already taken.`;
+                        username_validation.style.color = 'red';
+                        submit_enabled = false;
                     }
                     username_validation.style.display = 'block';
                     resolve(submit_enabled);
@@ -1054,19 +1249,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function description: Enables and shows submit button provided the user has
     // updated all of the input fields and that input is.
-    function jsEnablePasswordResetRequestSubmitButton() {
-        var email = document.getElementById('email').value.trim();
+    function jsEnablePasswordResetSubmitButton() {
+        var email = document.getElementById('id_email').value.trim();
         var submitButton = document.getElementById('submit_button');
-
-        console.log(`Running jsEnablePasswordResetRequestSubmitButton()`)
-        console.log(`Running jsEnablePasswordResetRequestSubmitButton()... CSRF Token is: ${csrfToken}`);
+        console.log(`Running jsEnablePasswordResetSubmitButton()`)
         
         if (email === "" ) {
             submitButton.disabled = true;
-            console.log(`Running jsEnablePasswordResetRequestSubmitButton()... Submit button disabled.`);
+            console.log(`Running jsEnablePasswordResetSubmitButton()... Submit button disabled.`);
         } else {
             // All validations passed
-            console.log(`Running jsEnablePasswordResetRequestSubmitButton()... All validation checks passed, enabling submit button.`);
+            console.log(`Running jsEnablePasswordResetSubmitButton()... All validation checks passed, enabling submit button.`);
             submitButton.disabled = false;
         }
     }
@@ -1074,9 +1267,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function description: Enables and shows submit button provided the user has
     // updated all of the input fields and that input is.
-    async function jsEnablePasswordResetRequestNewSubmitButton() {
-        var password = document.getElementById('password').value.trim();
-        var password_confirmation = document.getElementById('password_confirmation').value.trim();
+    async function jsEnablePasswordRequestConfirmationSubmitButton() {
+        var password = document.getElementById('id_password').value.trim();
+        var password_confirmation = document.getElementById('id_password_confirmation').value.trim();
         var submitButton = document.getElementById('submit_button');
 
         // Initially disable submit to ensure button is disabled while promises are in progress
@@ -1087,16 +1280,16 @@ document.addEventListener('DOMContentLoaded', function() {
             { label: 'Password Check', promise: jsPasswordValidation() },
             { label: 'Password Confirmation Check', promise: jsPasswordConfirmationValidation() }
         ];
-        console.log(`Running jsEnablePasswordResetRequestNewSubmitButton()`)
-        console.log(`Running jsEnablePasswordResetRequestNewSubmitButton()... CSRF Token is: ${csrfToken}`);
+        console.log(`Running jsEnablePasswordRequestConfirmationSubmitButton()`)
+        console.log(`Running jsEnablePasswordRequestConfirmationSubmitButton()... CSRF Token is: ${csrfToken}`);
 
         Promise.all(labeledPromises.map(labeledPromise => {
             // Add a console.log statement before each promise
-            //console.log(`Running jsEnablePasswordResetRequestNewSubmitButton()... Executing promise: ${labeledPromise.label}`);
+            //console.log(`Running jsEnablePasswordRequestConfirmationSubmitButton()... Executing promise: ${labeledPromise.label}`);
     
             return labeledPromise.promise.then(result => {
                 // Add a console.log statement after each promise resolves
-                console.log(`Running jsEnablePasswordResetRequestNewSubmitButton()... Promise (${labeledPromise.label}) resolved with result: ${result}`);
+                console.log(`Running jsEnablePasswordRequestConfirmationSubmitButton()... Promise (${labeledPromise.label}) resolved with result: ${result}`);
                 return { label: labeledPromise.label, result: result };
             });
         }))
@@ -1111,15 +1304,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (!allPromisesPassed) {
                     submitButton.disabled = true;
-                    console.log(`Running jsEnablePasswordResetRequestNewSubmitButton()... Submit button disabled.`);
+                    console.log(`Running jsEnablePasswordRequestConfirmationSubmitButton()... Submit button disabled.`);
                 } else {
                     // All validations passed
-                    console.log(`Running jsEnablePasswordResetRequestNewSubmitButton()... All validation checks passed, enabling submit button.`);
+                    console.log(`Running jsEnablePasswordRequestConfirmationSubmitButton()... All validation checks passed, enabling submit button.`);
                     submitButton.disabled = false;
                 }
             }).catch((error) => {
                 // Handle errors if any of the Promises reject
-                console.error(`Running jsEnablePasswordResetRequestNewSubmitButton()... Error is: ${error}.`);
+                console.error(`Running jsEnablePasswordRequestConfirmationSubmitButton()... Error is: ${error}.`);
                 submitButton.disabled = true;
             });
     }
@@ -1128,8 +1321,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function description: Enables and shows submit button provided the user has
     // updated all of the input fields and that input is.
     async function jsEnablePasswordChangeSubmitButton() {
-        var email = document.getElementById('email').value.trim();
-        var password_old = document.getElementById('password_old').value.trim();
+        var email = document.getElementById('id_email').value.trim();
+        var password_old = document.getElementById('id_password_old').value.trim();
         var submitButton = document.getElementById('submit_button');
 
         // Initially disable submit to ensure button is disabled while promises are in progress
@@ -1181,14 +1374,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function description: Enables and shows submit button provided the user has
     // updated any of the input fields.
     async function jsEnableProfileSubmitButton() {
-        var name_first = document.getElementById('name_first').value.trim();
-        var name_last = document.getElementById('name_last').value.trim();
-        var username = document.getElementById('username').value.trim();
+        var first_name = document.getElementById('id_first_name').value.trim();
+        var last_name = document.getElementById('id_last_name').value.trim();
+        var username = document.getElementById('id_username').value.trim();
         var username_validation = document.getElementById('username_validation');
-        var updated_accounting_method = document.getElementById('accounting_method').value;
-        var updated_tax_loss_offsets = document.getElementById('tax_loss_offsets').value;
-        var updated_tax_rate_STCG_value = parseFloat(document.getElementById('tax_rate_STCG_value').innerText.replace('%', ''));
-        var updated_tax_rate_LTCG_value = parseFloat(document.getElementById('tax_rate_LTCG_value').innerText.replace('%', ''));
+        var initial_accounting_method = document.getElementById('initial_accounting_method').value;
+        var accounting_method = document.getElementById('id_accounting_method').value;
+        var initial_tax_loss_offsets = document.getElementById('initial_tax_loss_offsets').value;
+        var tax_loss_offsets = document.getElementById('id_tax_loss_offsets').value;
+        var initial_tax_rate_STCG = parseFloat(document.getElementById('initial_tax_rate_STCG').innerText.replace('%', ''));
+        var tax_rate_STCG = parseFloat(document.getElementById('id_tax_rate_STCG').innerText.replace('%', ''));
+        var initial_tax_rate_LTCG = parseFloat(document.getElementById('initial_tax_rate_LTCG').innerText.replace('%', ''));
+        var tax_rate_LTCG = parseFloat(document.getElementById('id_tax_rate_LTCG').innerText.replace('%', ''));
                 
         if (username !== '') {
             await jsUsernameValidation();
@@ -1197,25 +1394,26 @@ document.addEventListener('DOMContentLoaded', function() {
         var username_validation = username_validation.innerText || username_validation.textContent;
         var submitButton = document.getElementById('submit_button');
         console.log(`Running jsEnableProfileSubmitButton()...`)
-        console.log(`Running jsEnableProfileSubmitButton()... value for username_validation is: ${ username_validation}`)
-        console.log(`Running jsEnableProfileSubmitButton()... CSRF Token is ${csrfToken}`);
-
-
+        
         console.log("Input Values:", {
-            name_first,
-            name_last,
+            first_name,
+            last_name,
             username,
             username_validation,
-            updated_accounting_method,
-            updated_tax_loss_offsets,
-            updated_tax_rate_STCG_value,
-            updated_tax_rate_LTCG_value,
+            initial_accounting_method,
+            accounting_method,
+            initial_tax_loss_offsets,
+            tax_loss_offsets,
+            initial_tax_rate_STCG,
+            tax_rate_STCG,
+            initial_tax_rate_LTCG,
+            tax_rate_LTCG,
         });
 
         // Logic: If any user input field != empty && username_validation passes, enable submit button
         if (
-            (name_first !== '' || name_last !== '' || username !== '' || updated_accounting_method !== initial_accounting_method || updated_tax_loss_offsets !== initial_tax_loss_offsets || updated_tax_rate_STCG_value !== initial_tax_rate_STCG_value || updated_tax_rate_LTCG_value !== initial_tax_rate_LTCG_value || updated_tax_loss_offsets !== initial_tax_loss_offsets) &&
-            username_validation !== 'Username unavailable'
+            (first_name !== '' || last_name !== '' || username !== '' || initial_accounting_method !== accounting_method || initial_tax_loss_offsets !== tax_loss_offsets || initial_tax_rate_STCG !== tax_rate_STCG || initial_tax_rate_LTCG !== tax_rate_LTCG) &&
+            !username_validation.includes('is already taken.')
         ) {
             submitButton.disabled = false;
         } else {
@@ -1248,8 +1446,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function description: Enables and shows submit button provided the user has
     // updated all of the input fields and that input is.
     async function jsEnableRegisterSubmitButton() {
-        var name_first = document.getElementById('name_first').value.trim();
-        var name_last = document.getElementById('name_last').value.trim();
+        var first_name = document.getElementById('id_first_name').value.trim();
+        var last_name = document.getElementById('id_last_name').value.trim();
         var submitButton = document.getElementById('submit_button');
 
         // Initially disable submit to ensure button is disabled while promises are in progress
@@ -1263,7 +1461,6 @@ document.addEventListener('DOMContentLoaded', function() {
             { label: 'Password Confirmation Check', promise: jsPasswordConfirmationValidation() }
         ];
         console.log(`Running jsEnableRegisterSubmitButton()`)
-        console.log(`Running jsEnableRegisterSubmitButton()... CSRF Token is: ${csrfToken}`);
 
         Promise.all(labeledPromises.map(labeledPromise => {
             // Add a console.log statement before each promise
@@ -1284,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Check if any of the promises return false
                 var allPromisesPassed = results.every(res => res.result === true);
                 
-                if (!allPromisesPassed || name_first === '' || name_last === "" ) {
+                if (!allPromisesPassed || first_name === '' || last_name === "" ) {
                     submitButton.disabled = true;
                     console.log(`Running jsEnableRegisterSubmitButton()... Submit button disabled.`);
                 } else {

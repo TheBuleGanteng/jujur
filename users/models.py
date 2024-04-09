@@ -34,6 +34,7 @@ class UserProfile(models.Model):
     tax_loss_offsets = models.CharField(max_length=64, default='On')
     tax_rate_STCG = models.DecimalField(max_digits=5, decimal_places=2, default=15.00)
     tax_rate_LTCG = models.DecimalField(max_digits=5, decimal_places=2, default=30.00)
+    confirmed = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.user.first_name} {self.user.last_name}'

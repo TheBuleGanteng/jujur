@@ -1,4 +1,5 @@
 {% load static %}
+
 <!DOCTYPE html>
 
 <html lang='en'>
@@ -33,58 +34,89 @@
 
     <body>
 
-        <nav class='bg-light border navbar navbar-expand-md navbar-light'>
+        <nav class='bg-light border navbar navbar-expand-md  sticky-top navbar-light'>
             <div class='container-fluid'>
-                <a class='navbar-brand' href='{# url "brokerage:index" #}#'><span class='red'>MyFinance</span><span class='yellow'>5</span><span class='green'>0</span></a>
+                <!-- NOTE TO SELF: CHANGE URL BELOW LATER -->
+                <a class='navbar-brand' href='{% url "users:index" %}'><span class='red'>MyFinance</span><span class='yellow'>5</span><span class='green'>0</span></a>
                 <button aria-controls='navbar' aria-expanded='false' aria-label='Toggle navigation' class='navbar-toggler' data-bs-target='#navbar' data-bs-toggle='collapse' type='button'>
                     <span class='navbar-toggler-icon'></span>
                 </button>
                 <div class='collapse navbar-collapse' id='navbar'>
                     {% if user.is_authenticated %}
                         <ul class='navbar-nav me-auto mt-2'>
-                            <li class='nav-item'><a class='nav-link' href='{% url "brokerage:index" %}'>Home</a></li>
-                            <li class='nav-item'><a class='nav-link' href='{% url "brokerage:quote" %}'>Quote</a></li>
-                            <li class='nav-item'><a class='nav-link' href='{% url "brokerage:buy" %}'>Buy</a></li>
-                            <li class='nav-item'><a class='nav-link' href='{% url "brokerage:sell" %}'>Sell</a></li>
-                            <li class='nav-item'><a class='nav-link' href='{% url "brokerage:history" %}'>History</a></li>
-                            <li class='nav-item'><a class='nav-link' href='{% url "brokerage:profile" %}'>Profile</a></li>
-                            <li class='nav-item'><a class='nav-link' href='{% url "brokerage:password_change" %}'>Change password</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{% url "users:index" %}'>Home</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{# url "brokerage:quote" #}#'>Quote</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{# url "brokerage:buy" #}#'>Buy</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{# url "brokerage:sell" #}#'>Sell</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{# url "brokerage:history" #}#'>History</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{% url "users:profile" %}'>Profile</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{% url "users:password_change" %}'>Change password</a></li>
                         </ul>
                         <ul class='navbar-nav ms-auto mt-2'>
                             <li class='nav-item'><a class='nav-link' href='{% url "users:logout" %}'>Log Out</a></li>
                         </ul>
                     {% else %}
                         <ul class='navbar-nav ms-auto mt-2'>
-                            <li class='nav-item'><a class='nav-link' href='{# url "users:register" #}#'>Register</a></li>
-                            <li class='nav-item'><a class='nav-link' href='{# url "users:password_reset_request" #}#'>Reset Password</a></li>
-                            <li class='nav-item'><a class='nav-link' href='{# url "users:login" #}#'>Log In</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{% url "users:register" %}'>Register</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{% url "users:password_reset" %}'>Reset Password</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{% url "users:login" %}'>Log In</a></li>
                         </ul>
                     {% endif %}
                 </div>
             </div>
         </nav>
 
-        {% if messages %}
-            <header>
-                <div class='alert alert-primary mb-0 text-center' role='alert'>
-                    {% for message in messages %}
-                        {{ message }}
-                    {% endfor %}
+        <!-- django's messages function -->
+        <div>
+            {% if messages %}
+                
+                <header>
+                    <div class='alert alert-primary mb-0 text-center' role='alert'>
+                        {% for message in messages %}
+                            {{ message }}
+                        {% endfor %}
+                    </div>
+                </header>
+            {% endif %}
+        </div>
+        <!-- /django's messages function -->
+
+        <!-- timeout modal controlled via JS -->
+        {% if user.is_authenticated %}
+            <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h5 class="modal-title">Timeout warning</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                        <p>You will be logged out in 5 minutes due to inactivity. Please extend your session or log out via the buttons below.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" name='timeout-logout-button' data-logout-url="{% url 'users:logout' %}">Log out</button>
+                            <button type="button" class="btn btn-success" name='timeout-extend-button' data-readiness-check-url="{% url 'readiness_check' %}">Remain logged in</button>
+                        </div>
+                    </div>
                 </div>
-            </header>
+            </div>
         {% endif %}
+        <!-- /timeout modal controlled via JS -->
 
-        <main class='container-fluid py-2'>
-            {% block main %}{% endblock %}
-        </main>
-
-        <footer class='mb-5 small text-center text-muted'>
-            Data provided by <a href='https://site.financialmodelingprep.com/developer/docs'>FMP</a>
+        
+        {% block main %}{% endblock %}
+        
+        
+        <footer class='footer mt-auto py-3 bg-light sticky-footer'>
+            <div class='container'>
+                <span class='text-muted'>Market data provided by <a href='https://site.financialmodelingprep.com/developer/docs'>FMP</a></span>
+            </div>
         </footer>
 
     </body>
 
     <!-- custom JavaScript file -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script nonce='{{ request.csp_nonce }}' src='{% static "myFinance50.js" %}'></script>
     <!-- /custom JavaScript file -->
 

@@ -118,6 +118,7 @@
     - Protection against cross-site registry attacks via Django's built-in CSRF middleware.
     - Protection against man-in-the-middle attacks by enforcing HTTPS only site-wide.
     - Protection against fraudulent or automated account creation via use of cryptographic tokens sent to the user via email as part of 2-step registration and password reset processes
+    - Automatic logout due to a specified period of inactivity, including warning popup for improved UX.
     - Exclusion of sensitive data (e.g. passwords) from being stored in Session or in cryptographic token used for password reset
     - Externalization of sensitive data (e.g. login needed to send emails programmatically) to .env file protected against upload to GitHub via .gitignore file
     - Daily automated purging of stale, unconfirmed user accounts via a cron job

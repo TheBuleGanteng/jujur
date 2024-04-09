@@ -12,6 +12,7 @@ allowed_input_numbers = '0-9'
 allowed_input_symbols_strict = '-.@_ :'
 allowed_input_symbols_phone = '+-. ()+ext'
 
+# This applies the regex above generally to user_input
 def regex_strict(user_input, allowed_input_letters_lower, allowed_input_letters_upper, allowed_input_numbers, allowed_input_symbols_strict ):
     # Step 1: Define regex
     # Escape the symbols for safe inclusion in regex pattern
@@ -29,8 +30,7 @@ def regex_strict(user_input, allowed_input_letters_lower, allowed_input_letters_
         raise ValidationError(f'Error: Allowed characters include: { allowed_input_letters_lower}, { allowed_input_letters_upper}, { allowed_input_numbers}, and { allowed_input_symbols_strict }')
     print(f'running allowed_chars_validator...  passed for input: {user_input}')
 
-
-
+# This applies the regex above, but tailored for phone numbers
 def regex_phone(user_input, allowed_input_letters_lower, allowed_input_letters_upper, allowed_input_numbers, allowed_input_symbols_phone):
     # Step 1: Define regex
     # Escape the symbols for safe inclusion in regex pattern
@@ -46,6 +46,9 @@ def regex_phone(user_input, allowed_input_letters_lower, allowed_input_letters_u
         raise ValidationError(f'Error: Allowed characters include: { allowed_input_numbers}, and { allowed_input_symbols_phone }')
     print(f'running allowed_chars_validator...  passed for input: {user_input}')
 
+
+
+
 #-----------------------------------------------------------------------------
 
 # EmailField plus:
@@ -55,8 +58,8 @@ class EmailFieldLowerRegexStrict(forms.EmailField):
     def clean(self, user_input):
         user_input = super().clean(user_input)  # Perform the standard cleaning and validation first
         user_input = user_input.lower().strip()
-        regex_strict(user_input, allowed_input_letters_lower, allowed_input_letters_upper, 
-        allowed_input_numbers, allowed_input_symbols_strict)
+        if user_input: 
+            regex_strict(user_input, allowed_input_letters_lower, allowed_input_letters_upper, allowed_input_numbers, allowed_input_symbols_strict)
         return user_input
 
 #-----------------------------------------------------------------------------
@@ -68,8 +71,8 @@ class CharFieldRegexStrict(forms.CharField):
     def clean(self, user_input):
         user_input = super().clean(user_input)  # Perform the standard cleaning and validation first
         user_input = user_input.strip()
-        regex_strict(user_input, allowed_input_letters_lower, allowed_input_letters_upper, 
-        allowed_input_numbers, allowed_input_symbols_strict)
+        if user_input:
+            regex_strict(user_input, allowed_input_letters_lower, allowed_input_letters_upper, allowed_input_numbers, allowed_input_symbols_strict)
         return user_input
 
 #-----------------------------------------------------------------------------
@@ -82,8 +85,8 @@ class CharFieldTitleCaseRegexStrict(forms.CharField):
     def clean(self, user_input):
         user_input = super().clean(user_input)  # Perform the standard cleaning and validation first
         user_input = user_input.title().strip()
-        regex_strict(user_input, allowed_input_letters_lower, allowed_input_letters_upper, 
-        allowed_input_numbers, allowed_input_symbols_strict)
+        if user_input:
+            regex_strict(user_input, allowed_input_letters_lower, allowed_input_letters_upper, allowed_input_numbers, allowed_input_symbols_strict)
         return user_input
 
 #-----------------------------------------------------------------------------
@@ -102,3 +105,5 @@ class CharFieldRegexPhone(PhoneNumberField):
         allowed_input_numbers, allowed_input_symbols_phone)
         return super().clean(value)
         
+
+__all__ = ['CharFieldRegexPhone', 'CharFieldRegexStrict', 'CharFieldTitleCaseRegexStrict', 'EmailFieldLowerRegexStrict', 'regex_phone', 'regex_strict']
