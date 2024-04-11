@@ -20,7 +20,7 @@
         <!-- instructional text -->
         <div class='container-fluid ps-0 mb-1'>
             <div class='container-fluid container-instructions-start-bold'>
-                Please complete all the fields below and click "submit" to create your account.
+                Please complete all the fields below and click "save changes" to update your profile.
             </div>
             <div class='container-fluid container-instructions-start'>
                 
@@ -45,7 +45,7 @@
             <!-- full_name -->
             <div class='user_input_registration row'>
                 <div class='col-sm-2' style='align-self: flex-start; text-align: start'>
-                    <label class='form-label-start-req-bold'>Full name:</label>
+                    <label class='form-label-start-bold'>Full name:</label>
                 </div>
                 <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                     <span class="form-control border-0">{{ full_name }}</span>
@@ -83,7 +83,7 @@
                 <!-- first_name  -->
                 <div class='user_input_registration row'>
                     <div class='col-sm-2' style='align-self: flex-start; text-align: start'>
-                        <label for='id_first_name' class='form-label-start-req-bold'>Updated first name:</label>
+                        <label for='id_first_name' class='form-label-start-bold'>Updated first name:</label>
                     </div>
                     <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                         {{ form.first_name }}
@@ -96,7 +96,7 @@
                 <!-- last_name  -->
                 <div class='user_input_registration row'>
                     <div class='col-sm-2' style='align-self: flex-start; text-align: start'>
-                        <label for='id_last_name' class='form-label-start-req-bold'>Updated last name:</label>
+                        <label for='id_last_name' class='form-label-start-bold'>Updated last name:</label>
                     </div>
                     <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                         {{ form.last_name }}
@@ -110,7 +110,7 @@
             <!-- username_old -->
             <div class='user_input_registration row'>
                 <div class='col-sm-2' style='align-self: flex-start; text-align: start'>
-                    <label for='id_username_old' class='form-label-start-req-bold'>Current username:</label>
+                    <label for='id_username_old' class='form-label-start-bold'>Current username:</label>
                 </div>
                 <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                     <span class="form-control border-0">{{ user.username }}</span>
@@ -137,7 +137,7 @@
             <!-- username -->
                 <div class='user_input_registration row'>
                     <div class='col-sm-2' style='align-self: flex-start; text-align: start'>
-                        <label for='id_username' class='form-label-start-req-bold'>Updated username:</label>
+                        <label for='id_username' class='form-label-start-bold'>Updated username:</label>
                     </div>
                     <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                         {{ form.username }}
@@ -147,7 +147,7 @@
 
             <!-- username validation -->
                 <div class='user_input_registration row m-0 p-0'>
-                    <label class='col-sm-2 form-label-start-req-bold'></label>
+                    <label class='col-sm-2 form-label-start-bold'></label>
                     <div class='col-sm-8 col-md-6 col-lg-4 container-input-validation' id='username_validation' name='username_validation' style='display: none;'>
                             <a></a>
                     </div>
@@ -160,7 +160,7 @@
             <!-- email -->
             <div class='user_input_registration row'>
                 <div class='col-sm-2' style='align-self: flex-start; text-align: start'>
-                    <label for='id_email' class='form-label-start-req-bold'>Email address:</label>
+                    <label for='id_email' class='form-label-start-bold'>Email address:</label>
                 </div>
                 <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                     <span class="form-control border-0">{{ user.email }}</span>
@@ -171,7 +171,7 @@
             <!-- date_joined -->
             <div class='user_input_registration row'>
                 <div class='col-sm-2' style='align-self: flex-start; text-align: start'>
-                    <label for='id_date_joined' class='form-label-start-req-bold'>Registered since:</label>
+                    <label for='id_date_joined' class='form-label-start-bold'>Registered since:</label>
                 </div>
                 <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                     <span class="form-control border-0">{{ user.date_joined|date:"d-m-Y" }}</span> 
@@ -200,17 +200,28 @@
             <!-- cash_intial -->
             <div class='user_input_registration row'>
                 <div class='col-sm-2' style='align-self: flex-start; text-align: start'>
-                    <label for='id_cash_initial' class='form-label-start-req-bold'>Initial cash:</label>
+                    <label for='id_cash_initial' class='form-label-start-bold'>Initial cash:</label>
                 </div>
                 <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                     <span class='form-control border-0'>{{ user.userprofile.cash_initial|filter_usd }}</span>
                 </div>
             </div>
             <!-- /cash_initial -->
+
+            <!-- cash -->
+            <div class='user_input_registration row'>
+                <div class='col-sm-2' style='align-self: flex-start; text-align: start'>
+                    <label for='id_cash' class='form-label-start-bold'>Current cash:</label>
+                </div>
+                <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
+                    <span class='form-control border-0'>{{ user.userprofile.cash|filter_usd }}</span>
+                </div>
+            </div>
+            <!-- /cash_initial -->
             
             <!-- accounting_method -->
             <div class='user_input_registration row'>        
-                <label for='{{ form.accounting_method.id_for_label }}' class='col-sm-2 form-label-start-req-bold'>{{ form.accounting_method.label }}</label>
+                <label for='{{ form.accounting_method.id_for_label }}' class='col-sm-2 form-label-start-bold'>{{ form.accounting_method.label }}</label>
                 <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                     <input type="hidden" id="initial_accounting_method" value="{{ user.userprofile.accounting_method }}">
                     {{ form.accounting_method }}
@@ -232,7 +243,7 @@
 
             <!-- tax_loss_offsets -->
             <div class='user_input_registration row'>        
-                <label for='{{ form.tax_loss_offsets.id_for_label }}' class='col-sm-2 form-label-start-req-bold'>{{ form.tax_loss_offsets.label }}</label>
+                <label for='{{ form.tax_loss_offsets.id_for_label }}' class='col-sm-2 form-label-start-bold'>{{ form.tax_loss_offsets.label }}</label>
                 <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                     <input type='hidden' id='initial_tax_loss_offsets' value='{{ user.userprofile.initial_tax_loss_offsets }}'>
                     {{ form.tax_loss_offsets }}
@@ -253,7 +264,7 @@
 
             <!-- tax_rate_STCG -->
             <div class='user_input_registration row'>
-                <label for='{{ form.tax_rate_STCG.id_for_label }}' class='col-sm-2 form-label-start-req-bold'>{{ form.tax_rate_STCG.label }}</label>
+                <label for='{{ form.tax_rate_STCG.id_for_label }}' class='col-sm-2 form-label-start-bold'>{{ form.tax_rate_STCG.label }}</label>
                 <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                     <input type='hidden' id='initial_tax_rate_STCG' value='{{ user.userprofile.tax_rate_STCG }}'>
                     {{ form.tax_rate_STCG }}
@@ -277,7 +288,7 @@
             
             <!-- tax_rate_LTCG -->
             <div class='user_input_registration row'>
-                <label for='{{ form.tax_rate_LTCG.id_for_label }}' class='col-sm-2 form-label-start-req-bold'>{{ form.tax_rate_LTCG.label }}</label>
+                <label for='{{ form.tax_rate_LTCG.id_for_label }}' class='col-sm-2 form-label-start-bold'>{{ form.tax_rate_LTCG.label }}</label>
                 <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
                     <input type='hidden' id='initial_tax_rate_LTCG' value='{{ user.userprofile.tax_rate_LTCG }}'>
                     {{ form.tax_rate_LTCG }}

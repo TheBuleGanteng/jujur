@@ -1,10 +1,12 @@
 import os
 
 CSS_CACHE_ENABLED=False
-DEBUG=False
+DEBUG=True
+SECURE_SSL_REDIRECT=False # Must = True for deployment. If user tries to access via http, user is redirected to https
+
 
 # Logging configurations
-log_to_file=True
+log_to_file=False
 log_to_terminal=True
 
 # My domain (used for composing the URL for generate_confirmation_url(token))

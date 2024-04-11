@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // javascript for password_request_reset----------------------------------
-    if (window.location.pathname === '/password-reset') {
+    if (window.location.pathname === '/password-reset/') {
         console.log("Running myFinance50.js for /password_reset... ");
 
         // Pulls in elements if they exist on page and assigns them to variables
@@ -703,7 +703,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 resolve(submit_enabled);
             } else {
                 console.log(`Running jsEmailValidation()... email != '' (email is not empty)`);
-                fetch('/check_email_registered', {
+                fetch('/check_email_registered/', {
                     method: 'POST',
                     body: new URLSearchParams({ 'user_input': email }),
                     headers: {
@@ -781,7 +781,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return resolve(false);
             }
             // If password is not blank, then toss the value over to the /check_password_strength in app.py
-            fetch('/check_password_valid', {
+            fetch('/check_password_valid/', {
                 method: 'POST',
                 body: new URLSearchParams({ 
                     'password': password,
@@ -866,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return resolve(false);
             }
             // If password is not blank, then toss the value over to the /check_password_strength in app.py
-            fetch('/check_password_valid', {
+            fetch('/check_password_valid/', {
                 method: 'POST',
                 body: new URLSearchParams({ 
                     'password': password,
@@ -1187,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 resolve(submit_enabled);
             } else {
                 console.log(`Running jsUsernameValidation()... username != '' (username is not empty)`);
-                fetch('/check_username_registered', {
+                fetch('/check_username_registered/', {
                     method: 'POST',
                     body: new URLSearchParams({ 'user_input': username }),
                     headers: {

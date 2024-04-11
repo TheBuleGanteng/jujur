@@ -84,9 +84,9 @@ class PasswordResetConfirmationForm(forms.Form):
 class ProfileForm(forms.ModelForm):
     first_name=first_name
     last_name=last_name
-    username_old=username_old
+    #username_old=username_old
     username=username
-    email=email
+    #email=email
     accounting_method=accounting_method
     tax_loss_offsets=tax_loss_offsets
     tax_rate_STCG=tax_rate_STCG
@@ -94,7 +94,7 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ['first_name', 'last_name', 'username', 'email', 'accounting_method', 'tax_loss_offsets', 'tax_rate_STCG', 'tax_rate_LTCG']
+        fields = ['first_name', 'last_name', 'username', 'accounting_method', 'tax_loss_offsets', 'tax_rate_STCG', 'tax_rate_LTCG']
         
 #------------------------------------------------------------------------
 

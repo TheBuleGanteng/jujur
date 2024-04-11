@@ -35,7 +35,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Use .env file to set project environment, with 'dev' as the fallback
 SECRET_KEY = os.getenv('SECRET_KEY')
 PROJECT_ENV = os.getenv('ENVIRONMENT', 'development')
-ALLOWED_HOSTS = ['', '127.0.0.1', '34.70.192.208',['*']]
+ALLOWED_HOSTS = ['', '127.0.0.1', '34.70.192.208']
 TOKEN_TIMEOUT = int(os.getenv('TOKEN_TIMEOUT')) # Sets the expiration of a unique token generated via Django's PasswordResetTokenGenerator
 SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE'))
 SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv('SESSION_EXPIRE_AT_BROWSER_CLOSE')
@@ -43,7 +43,6 @@ SESSION_SAVE_EVERY_REQUEST = os.getenv('SESSION_SAVE_EVERY_REQUEST')
 
 # Important security-related settings
 CSRF_COOKIE_SECURE=True # Must = True for deployment. Sends CSRF cookies only over HTTPS
-SECURE_SSL_REDIRECT=True # Must = True for deployment. If user tries to access via http, user is redirected to https
 SESSION_COOKIE_HTTPONLY=True  # Must = True for deployment. Prevents client-side JavaScript from accessing the session cookie
 SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO', 'https')
 X_FRAME_OPTIONS = 'DENY' # Must = True for deployment. Prevents framing of the site, equivalent to "frame-ancestors": ["'none'"] in CSP. Can also use 'SELF'

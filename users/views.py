@@ -326,6 +326,8 @@ def login_view(request):
     if request.method == "POST":
         logger.debug('running users app, login_view ... user submitted via POST')
         
+        form = LoginForm(request.POST)
+
         # Do the following if submission=POST && submission passes validation...
         if form.is_valid():
             logger.debug('running users app, login_view ... user submitted via POST and form passed validation')
@@ -341,7 +343,7 @@ def login_view(request):
             logger.debug(f'running users app, login_view ... retrieved user object: { user }')
 
             # If user is registered and confirmed, display a message and redirect to index.
-            if user is not None and user.userprofile.confirmed == True:
+            if user and user.userprofile.confirmed == True:
                 logger.debug('running users app login_view ... user found in DB and is confirmed. Showing success message and redirecting to index.')
                 
                 login(request, user)
@@ -349,14 +351,14 @@ def login_view(request):
                 messages.success(request, f'Welcome { user.get_username }, you are now logged in to { PROJECT_NAME }.')
                 return HttpResponseRedirect(reverse('users:index'))
         
-            # If user is registered and already confirmed, display a message and redirect to login.
-            if user is not None and user.userprofile.confirmed == False:
+            # If user is registered and not yet confirmed, display a message and redirect to login.
+            elif user and user.userprofile.confirmed == False:
                 logger.debug('running users app login_view ... user found in DB and is not confirmed. Showing error message and redirecting to login.')
                 
                 messages.error(request, f'You must confirm your account before logging in. Please check your email inbox and spam folders to an email from { PROJECT_NAME } or re-register your account.')
                 return render(request, 'users/login.html', {'form': form})
 
-            # If user is not registered and already confirmed, display a message and redirect to login.
+            # If user is not registered, display a message and redirect to login.
             else:
                 logger.debug('running users app login_view ... user not found in DB')
                 messages.error(request, f'Error: Invalid credentials. Please check your entries for email and password. If you have not yet registered for { PROJECT_NAME }, please do so via the link below.')
@@ -371,7 +373,9 @@ def login_view(request):
     # If arrived via GET, display the login form.
     else:
         logger.debug('running users app login_view ... user arrived via GET')
-        return render(request, 'users/login.html', {'form': form})
+        form = LoginForm()
+        
+    return render(request, 'users/login.html', {'form': form})
 
 #--------------------------------------------------------------------------------
 
@@ -453,7 +457,7 @@ def password_change_view(request):
                 user.save()
                 logger.debug(f'running users app, password_change_view ... user submitted valid password, email_old, email, and email_confirmation. Flashing success msg. and redirecting')
                 messages.success(request, 'You have successfully updated your password.')
-                return redirect('users:index')
+                return redirect('users:login')
 
             except Exception as e:
                 logger.debug(f'running users app, password_change_view ... unable to run authenticate on email+password_old with error: { e }. Flashing error msg. and rendering password_change.html')
@@ -506,8 +510,8 @@ def password_reset_view(request):
                 # Queries the DB to check if the user-entered value is in the DB
                 user = User.objects.filter(email=email).first()
 
-                # If the user is found, compose and sent the email with a token
-                if user:
+                # If the user is found and is confirmed, compose and sent the email with a token
+                if user and user.userprofile.confirmed == True:
                     # Generate token
                     token = generate_unique_token(user)
                     logger.debug(f'running users app, password_reset_view ... token generated')
@@ -675,12 +679,10 @@ def profile_view(request):
                     if form.cleaned_data.get(field) is not None or (''):
                         setattr(user_profile, field, form.cleaned_data[field])
                 user_profile.save()  # Save changes to the UserProfile model
-                
-
-            
+                            
                 # Save the updated user profile and complete update process
                 logger.debug(f'running users app, profile_view ... successfully pulled in all data from RegistrationForm')
-                messages.success(request, 'You have successfully updated your profile')
+                messages.success(request, 'You have successfully updated your profile.')
                 return redirect('users:index')
 
             # If pulling in data from the form fails, flash error message and return to register
@@ -774,7 +776,7 @@ def register_view(request):
 
                 # Step 2.1.1.3: Query new user object from DB.
                 user = User.objects.filter(email=email).first()
-                messages.debug(request, f'running users app, register_view ... successfully pulled user object post-creation using email: { email }. User object is: { user }')
+                logger.debug(request, f'running users app, register_view ... successfully pulled user object post-creation using email: { email }. User object is: { user }')
                 
                 # Step 2.1.1.3: Generate token
                 token = generate_unique_token(user)
@@ -847,7 +849,7 @@ def register_confirmation_view(request):
         # Step 2: If token is invalid, flash error msg and redirect user to register
         if not token_generator.check_token(user, token):
             logger.debug(f'running users app, register_confirmation_view ... no user found.')
-            messages.error(request, 'Error: If you have already confirmed your account, please login. Otherwise please re-register your account to get a new confirmation link via email.')    
+            messages.error(request, 'Error: If you have already confirmed your account, please log in. Otherwise please re-register your account to get a new confirmation link via email.')    
             return redirect('users:login')
 
         user_profile = UserProfile.objects.filter(user=user).first()
@@ -874,5 +876,5 @@ def register_confirmation_view(request):
     # Step 5: If token is invalid or DB update fails, flask error message and redirect to reset.html
     except Exception as e:
             logger.debug(f'running /register_confirmation ...  Error: unable to change user_profile.concerned to True. Error is: {e}. Flashing error msg and rendering register.html ')
-            messages.error(request, 'Error: Invalid or expired authentication link. Please re-register.')
-            return redirect('users:register')
+            messages.error(request, 'Error: Invalid or expired authentication link. Please log in or re-register.')
+            return redirect('users:login')
