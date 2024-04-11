@@ -161,7 +161,7 @@ class MyModelTests(TestCase):
         self.assertEqual(response_followed.status_code, 200)
 
         # Assert the final destination uses the expected template (if applicable)
-        self.assertTemplateUsed(response_followed, 'users/index.html')  # Replace 'index_template_name.html' with your actual index template
+        self.assertTemplateUsed(response_followed, 'brokerage/index.html')  # Replace 'index_template_name.html' with your actual index template
 
     
     # login_view Test 3: Missing CSRF token on form submission

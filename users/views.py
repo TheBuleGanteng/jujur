@@ -212,7 +212,7 @@ def index(request):
         return HttpResponseRedirect(reverse('users:login'))
     
     # Otherwise, if the user is authenticated
-    return render(request, "users/index.html")
+    return render(request, 'users/index.html')
     
 #--------------------------------------------------------------------------------
 
@@ -348,8 +348,8 @@ def login_view(request):
                 
                 login(request, user)
                 logger.debug('running users app login_view ... user logged in, reversing to index')
-                messages.success(request, f'Welcome { user.get_username }, you are now logged in to { PROJECT_NAME }.')
-                return HttpResponseRedirect(reverse('users:index'))
+                messages.success(request, f'Welcome { user.get_username() }, you are now logged in to { PROJECT_NAME }.')
+                return HttpResponseRedirect(reverse('brokerage:index'))
         
             # If user is registered and not yet confirmed, display a message and redirect to login.
             elif user and user.userprofile.confirmed == False:

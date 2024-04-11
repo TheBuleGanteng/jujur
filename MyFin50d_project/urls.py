@@ -20,7 +20,7 @@ from users.views import login_view
 from utils.views import readiness_check_view #This is done to allow readiness_check (defined in utils/views.py) access to the root url
 
 urlpatterns = [
-    path('brokerage/', include('brokerage.urls')),
+    path('', include(('brokerage.urls', 'brokerage'), namespace='brokerage')),
     path('', include(('users.urls', 'users'), namespace='users')),
     path("admin/", admin.site.urls),
     path('csp/', include('csp.urls', namespace='csp')),

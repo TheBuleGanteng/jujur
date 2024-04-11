@@ -66,7 +66,7 @@ print(f'running settings.py ... DEBUG is: { DEBUG }')
 # Application definition
 INSTALLED_APPS = [
     # Apps created for this project
-    #'brokerage',
+    'brokerage',
     'users', # Manages registration, user profiles, login, passwords
     'utils', # Manages CSP reporting, nonce generation, readiness check
     # Utilities
