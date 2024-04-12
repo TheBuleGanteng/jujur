@@ -24,7 +24,7 @@ grpcio==1.62.1
 grpcio-status==1.62.1
 gunicorn==21.2.0
 httplib2==0.22.0
-idna==3.6
+idna==3.7
 Markdown==3.6
 MarkupSafe==2.1.5
 packaging==24.0
