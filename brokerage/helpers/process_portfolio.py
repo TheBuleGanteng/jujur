@@ -254,7 +254,7 @@ def process_user_transactions(user):
     logger.debug(f'running /process_user_transactions(user) ...  portfolio.cash is: { portfolio.cash }')
 
     # Step 3.5: Derive total portfolio cost basis, market value, and returns, all ex cash.
-    for symbol, symbol_data in portfolio._portfolio_data.items():
+    for symbol, symbol_data in portfolio.portfolio_data.items():
         portfolio.portfolio_total_transaction_shares += symbol_data['transaction_shares']
         portfolio.portfolio_total_shares_outstanding += symbol_data['shares_outstanding']
         portfolio.portfolio_cost_basis_total += symbol_data['cost_basis_total']

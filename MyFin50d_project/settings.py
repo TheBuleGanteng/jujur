@@ -35,7 +35,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Use .env file to set project environment, with 'dev' as the fallback
 SECRET_KEY = os.getenv('SECRET_KEY')
 PROJECT_ENV = os.getenv('ENVIRONMENT', 'development')
-ALLOWED_HOSTS = ['', '127.0.0.1', '34.70.192.208']
+ALLOWED_HOSTS = ['', '127.0.0.1', '34.70.192.208', 'localhost']
 TOKEN_TIMEOUT = int(os.getenv('TOKEN_TIMEOUT')) # Sets the expiration of a unique token generated via Django's PasswordResetTokenGenerator
 SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE'))
 SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv('SESSION_EXPIRE_AT_BROWSER_CLOSE')
@@ -43,7 +43,11 @@ SESSION_SAVE_EVERY_REQUEST = os.getenv('SESSION_SAVE_EVERY_REQUEST')
 
 # Important security-related settings
 CSRF_COOKIE_SECURE=True # Must = True for deployment. Sends CSRF cookies only over HTTPS
+SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY=True  # Must = True for deployment. Prevents client-side JavaScript from accessing the session cookie
+CSRF_COOKIE_SAMESITE = 'Strict'  # 'Strict' is also an option but can interfere with some third-party integrations
+SESSION_COOKIE_SAMESITE = 'Strict'  # 'Strict' is also an option but can interfere with some third-party integrations
+CSRF_COOKIE_HTTPONLY = True  # Ensures CSRF cookies are HttpOnly, if you need to access CSRF token in JavaScript, keep it False
 SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO', 'https')
 X_FRAME_OPTIONS = 'DENY' # Must = True for deployment. Prevents framing of the site, equivalent to "frame-ancestors": ["'none'"] in CSP. Can also use 'SELF'
 
@@ -93,6 +97,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'utils.middleware.ContentTypeOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
@@ -177,10 +182,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CSP_DEFAULTS = {
 "default-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://www.googletagmanager.com", "https://www.google-analytics.com"],
     "script-src": ["'self'", "https://127.0.0.1:8000", 'https://ajax.googleapis.com', "https://cdn.jsdelivr.net", "https://code.jquery.com/", "https://www.googletagmanager.com", "https://www.google-analytics.com", "https://substackapi.com", "{nonce}"],
-    "style-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
+    "style-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
     "img-src": ["'self'", "data:", "https://127.0.0.1:8000", "https://financialmodelingprep.com/", "https://images.unsplash.com", "https://substackcdn.com"],
     "frame-src": ["'self'", "https://www.youtube.com"],
     "connect-src": ["'self'", "https://substackapi.com", "https://www.google-analytics.com"],
+    "form-action": ["'self'", "https://127.0.0.1:8000"],
     "frame-ancestors": ["'none'"], # Prevents framing of the site, equivalent to setting X_FRAME_OPTIONS = 'DENY'.  "'none'" allows no framing and "'self'" allows self framing 
 }
 

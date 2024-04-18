@@ -9,3 +9,5 @@ def filter_usd(value):
         return f"${value:,.2f}"
     else:
         return f"(${-value:,.2f})"
+
+

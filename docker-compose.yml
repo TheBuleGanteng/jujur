@@ -29,7 +29,7 @@ services:
       dockerfile: Dockerfile.nginx
     volumes:
       - ./gitignored:/certs  # This line maps the local 'gitignored' directory to '/certs' inside the container
-      - static_volume:/app/staticfiles
+      - ./shared_static/staticfiles:/app/staticfiles
       - media_volume:/app/media
       - ./logs:/var/log/nginx # Added in logging setup
     ports:

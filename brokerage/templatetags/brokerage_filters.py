@@ -18,3 +18,4 @@ def percentage(value):
         return f"{value*100:,.2f}%"
     else:
         return f"({-value*100:,.2f}%)"
+

@@ -36,15 +36,14 @@
 
         <nav class='bg-light border navbar navbar-expand-md  sticky-top navbar-light'>
             <div class='container-fluid'>
-                <!-- NOTE TO SELF: CHANGE URL BELOW LATER -->
-                <a class='navbar-brand' href='{% url "users:index" %}'><span class='red'>MyFinance</span><span class='yellow'>5</span><span class='green'>0</span></a>
+                <a class='navbar-brand' href='{% url "brokerage:index" %}'><span class='red'>MyFinance</span><span class='yellow'>5</span><span class='green'>0</span></a>
                 <button aria-controls='navbar' aria-expanded='false' aria-label='Toggle navigation' class='navbar-toggler' data-bs-target='#navbar' data-bs-toggle='collapse' type='button'>
                     <span class='navbar-toggler-icon'></span>
                 </button>
                 <div class='collapse navbar-collapse' id='navbar'>
                     {% if user.is_authenticated %}
                         <ul class='navbar-nav me-auto mt-2'>
-                            <li class='nav-item'><a class='nav-link' href='{% url "users:index" %}'>Home</a></li>
+                            <li class='nav-item'><a class='nav-link' href='{% url "brokerage:index" %}'>Home</a></li>
                             <li class='nav-item'><a class='nav-link' href='{# url "brokerage:quote" #}#'>Quote</a></li>
                             <li class='nav-item'><a class='nav-link' href='{# url "brokerage:buy" #}#'>Buy</a></li>
                             <li class='nav-item'><a class='nav-link' href='{# url "brokerage:sell" #}#'>Sell</a></li>

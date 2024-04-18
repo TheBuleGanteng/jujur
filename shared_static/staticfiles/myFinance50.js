@@ -1,14 +1,3 @@
-// Global CSRF Token Variable
-let csrfToken = ''; 
-let csrfTokenInput = document.querySelector('input[name="csrf_token"]');
-if (csrfTokenInput) {
-    csrfToken = csrfTokenInput.value;
-    console.log("CSRF Token set:", csrfToken);
-} else {
-    console.log("CSRF token input not found.");
-}
-
-
 window.addEventListener('load', function() {
     var spinner = document.getElementById('loadingSpinner');
     if (spinner) {
@@ -23,6 +12,16 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM content loaded in myFinance50.js.');
     console.log('this is a console.log from myFinance50.js....myFinance50.js loaded successfully');
     
+    // Global CSRF Token Variable
+    let csrfToken = ''; 
+    let csrfTokenInput = document.querySelector('input[name="csrf_token"]');
+    if (csrfTokenInput) {
+        csrfToken = csrfTokenInput.value;
+        console.log("CSRF Token set:", csrfToken);
+    } else {
+        console.log("CSRF token input not found.");
+    }
+
     
     // Declaration of global variables and functions------------------------------------------------------------
     // buy

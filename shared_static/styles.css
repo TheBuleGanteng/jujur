@@ -61,6 +61,21 @@ nav .navbar-brand .green
   text-align: center;
 }
 
+
+.loadingSpinner{
+  position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
 .quote-changes {
   font-size: calc(1.375rem + 1.5vw); /* REPLICATES H1 */
   font-weight: bold;
@@ -163,6 +178,30 @@ table td {
   z-index: 10; /* Ensure it sits above other content */
 }
 
+.table-totals{
+  font-weight:bold;
+  border-bottom: 2px solid #000000;
+  border-top: 2px solid #000000;
+  background-color: rgb(221, 237, 255);
+}
+
+.table-totals-no-bottom{
+  font-weight:bold;
+  border-top: 2px solid #000000;
+}
+
+.text-available {
+    color: #22bd39; /* Green for available */
+}
+
+.text-taken {
+    color: red; /* Red for taken */
+}
+
+.text-error {
+    color: red; /* Red for error, can be the same as 'text-taken' if desired */
+}
+
 th {
     display: table-cell;
     vertical-align: bottom;
@@ -188,6 +227,13 @@ select.mySelect option {
     padding: 10px;
     border-color: #000000;
 }
+
+
+.user-input-registration-label {
+  align-self: flex-start; 
+  text-align: start
+}
+
 
 
 .container-instructions-start {
@@ -217,7 +263,6 @@ select.mySelect option {
 }
 
 .container-input-validation {
-  color: var(--bs-red);
   font-size: smaller;
   font-style: italic;
   margin-top: -10px !important;
@@ -227,7 +272,7 @@ select.mySelect option {
 
 
 .container-input-validation-pw-bullets {
-  color: var(--bs-table-active-color);
+  /*color: var(--bs-table-active-color);*/
   font-size: smaller;
   font-style: italic;
   list-style-type: disc;

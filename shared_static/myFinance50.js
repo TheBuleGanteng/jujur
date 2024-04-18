@@ -13,8 +13,8 @@ if (csrfTokenInput) {
 window.addEventListener('load', function() {
     var spinner = document.getElementById('loadingSpinner');
     if (spinner) {
-        spinner.classList.remove('d-flex');
-        spinner.style.display = 'none';
+        spinner.classList.remove('d-flex'); // Remove the flex display class if it's set
+        spinner.classList.add('d-none');    // Add Bootstrap's 'd-none' class to hide the spinner
     } else {
         console.log("Spinner element not found.");
     }
@@ -552,34 +552,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var email = document.getElementById('id_email');
         var password = document.getElementById('id_password');
         var password_confirmation = document.getElementById('id_password_confirmation');
-        var accounting_method = document.getElementById('id_accounting_method');
-        var tax_loss_offsets = document.getElementById('id_tax_loss_offsets');
-        /* POTENTIALLY REMOVE 
-        var tax_rate_STCG= document.getElementById('id_tax_rate_STCG');
-        */
-        /* POTENTIALLY REMOVE
-        var tax_rate_STCG_value = document.getElementById('tax_rate_STCG_value');
-        */
-        /* POTENTIALLY REMOVE
-        var tax_rate_LTCG= document.getElementById('id_tax_rate_LTCG');
-        */
-         /* POTENTIALLY REMOVE
-        var tax_rate_LTCG_value = document.getElementById('tax_rate_LTCG_value');
-        */
+        var submitButton = document.getElementById('submit_button');        
         var RegisterForm = document.querySelector('form'); // Selects the only form on the page
-
-        /* POTENTIALLY REMOVE
-        if (RegisterForm) {
-            RegisterForm.addEventListener('submit', function(event) {
-                var taxRateSTCGValue = parseFloat(document.getElementById('tax_rate_STCG_value').innerText.replace('%', '')).toFixed(2);
-                var hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'tax_rate_STCG'; // The name must match what you expect on the server side
-                hiddenInput.value = taxRateSTCGValue;
-                RegisterForm.appendChild(hiddenInput);
-            });
-        }
-        */
 
         if (first_name) {
             first_name.addEventListener('input', function() {
@@ -593,20 +567,30 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        if (email) {
-            email.addEventListener('input', function() {
-                jsEmailValidation(); 
+        function debouncedEmailValidation() {
+            submitButton.disabled = true;
+            // Immediately disable the submit button when input changes
+            jsEmailValidation().then(() => { 
                 jsEnableRegisterSubmitButton();
-            });
+           });
+        }
+
+        if (email) {
+            email.addEventListener('input', debounce(debouncedEmailValidation, 300));
+        }
+             
+        function debouncedUsernameValidation() {
+            submitButton.disabled = true;
+            // Immediately disable the submit button when input changes
+            jsUsernameValidation().then(() => { 
+                jsEnableRegisterSubmitButton();
+           });
         }
 
         if (username) {
-            username.addEventListener('input', function() {
-                console.log('input for username detected')
-                jsUsernameValidation(); 
-                jsEnableRegisterSubmitButton();
-            });
+            username.addEventListener('input', debounce(debouncedUsernameValidation, 300));
         }
+        
 
         if (password) {
             password.addEventListener('input', function() {
@@ -622,22 +606,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        /*
-        if (tax_rate_STCG) {
-            jsUpdateTaxRateDisplaySTCG(tax_rate_STCG, tax_rate_STCG_value);
-            tax_rate_STCG.addEventListener('input', function() {
-                jsUpdateTaxRateDisplaySTCG(tax_rate_STCG, tax_rate_STCG_value);
-            });
-        }
-
-        if (tax_rate_LTCG) {
-            jsUpdateTaxRateDisplayLTCG(tax_rate_STCG, tax_rate_STCG_value);
-            document.getElementById('id_tax_rate_LTCG').addEventListener('input', function() { 
-                jsUpdateTaxRateDisplayLTCG(tax_rate_LTCG, tax_rate_LTCG_value);
-            });
-        }
-        */
-
     } 
     // /javascript for register ----------------------------------------------
 
@@ -688,17 +656,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function definitions -------------------------------------------------------------------    
 
-    // Function description: Provides real-time feedback to user re availability of email.
     function jsEmailValidation() {
         return new Promise((resolve, reject) => {
             var email = document.getElementById('id_email').value.trim();
             var email_validation = document.getElementById('email_validation');
-            console.log(`Running jsEmailValidation()... email is: ${email}`);
-
+            console.log(`Running jsUsernameValidation()... username is: ${username}`);
+    
+            // Clear any previous states to prevent residual styling
+            email_validation.classList.remove('text-available', 'text-taken', 'text-error');
+    
             if (email === '') {
-                console.log(`Running jsEmailValidation()... email ==='' (email is empty)`);
+                console.log(`Running jsEmailValidation()... email === '' (email is empty)`);
                 email_validation.innerHTML = '';
-                email_validation.style.display = 'none';
+                email_validation.classList.add('d-none');
                 submit_enabled = false;
                 resolve(submit_enabled);
             } else {
@@ -719,24 +689,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .then(data => {
-                    // Check the result from the server
                     if (data.email === null) {
-                        email_validation.innerHTML = 'Email address available';
-                        email_validation.style.color = '#22bd39';
+                        email_validation.innerHTML = 'Email available';
+                        email_validation.classList.add('text-available');
                         submit_enabled = true;
                     } else {
-                        email_validation.innerHTML = `Email address '${data.email}' is already registered.`;
-                        email_validation.style.color = 'red';
+                        email_validation.innerHTML = `Email '${data.email}' is already associated with an account.`;
+                        email_validation.classList.add('text-taken');
                         submit_enabled = false;
                     }
-                    email_validation.style.display = 'block';
+                    email_validation.classList.remove('d-none'); // Ensure visibility regardless of state
                     resolve(submit_enabled);
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     email_validation.innerHTML = 'An error occurred. Please try again.';
-                    email_validation.style.color = 'red';
-                    email_validation.style.display = 'block';
+                    email_validation.classList.add('text-error');
+                    email_validation.classList.remove('d-none');
                 });
             }
         });
@@ -761,7 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     elements = [elements]; // Wrap the single element in an array
                 }
                 elements.forEach(element => {
-                    element.style.color = 'black';
+                    element.classList.remove('text-available');
                 });
             }
 
@@ -771,7 +740,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     elements = [elements]; // Wrap the single element in an array
                 }
                 elements.forEach(element => {
-                    element.style.color = '#22bd39';
+                    element.classList.remove('text-taken');
+                    element.classList.add('text-available');
                 });
             }
             
@@ -846,7 +816,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     elements = [elements]; // Wrap the single element in an array
                 }
                 elements.forEach(element => {
-                    element.style.color = 'black';
+                    element.classList.remove('text-available');
                 });
             }
 
@@ -856,7 +826,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     elements = [elements]; // Wrap the single element in an array
                 }
                 elements.forEach(element => {
-                    element.style.color = '#22bd39';
+                    element.classList.remove('text-taken');
+                    element.classList.add('text-available');
                 });
             }
             
@@ -970,22 +941,21 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Running jsShowHiddenNameField()... CSRF Token is ${csrfToken}`);
 
         
-        /* Check if hidden content is already displayed */
-        if (profile_hidden_name_container.style.display === 'block') {
-            // Hide the container and clear the input field
-            profile_hidden_name_container.style.display = 'none';
-            first_name.value = '';
-            last_name.value = '';
-            updateButtonNameFull.innerHTML = 'update';
-            updateButtonNameFull.color = 'grey';
-            updateButtonNameFull.classList.remove('btn-secondary');
-            updateButtonNameFull.classList.add('btn-primary');
-        } else {
+        // Check if hidden content is already hidden
+        if (profile_hidden_name_container.classList.contains('d-none')) {
             // Show the container
-            profile_hidden_name_container.style.display = 'block';
-            updateButtonNameFull.innerHTML = 'undo';
+            profile_hidden_name_container.classList.remove('d-none');
+            updateButtonNameFull.innerHTML = 'Undo';
             updateButtonNameFull.classList.remove('btn-primary');
             updateButtonNameFull.classList.add('btn-secondary');
+        } else {
+            // Hide the container and clear the input field
+            profile_hidden_name_container.classList.add('d-none');
+            first_name.value = '';
+            last_name.value = '';
+            updateButtonNameFull.innerHTML = 'Update';
+            updateButtonNameFull.classList.remove('btn-secondary');
+            updateButtonNameFull.classList.add('btn-primary');
         }
     }
 
@@ -1000,21 +970,21 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Running jsShowHiddenUsernameField()...`)
         console.log(`Running jsShowHiddenUsernameField()... CSRF Token is ${csrfToken}`);
         
-        /* Check if hidden content is already displayed */
-        if (profile_hidden_username_container.style.display === 'block') {
-            // Hide the container and clear the input field
-            profile_hidden_username_container.style.display = 'none';
-            username.value = '';
-            updateButtonUsername.innerHTML = 'update';
-            updateButtonUsername.color = 'grey';
-            updateButtonUsername.classList.remove('btn-secondary');
-            updateButtonUsername.classList.add('btn-primary');
-        } else {
+        // Check if hidden content is already displayed
+        if (profile_hidden_username_container.classList.contains('d-none')) {
             // Show the container
-            profile_hidden_username_container.style.display = 'block';
-            updateButtonUsername.innerHTML = 'undo';
+            profile_hidden_username_container.classList.remove('d-none');
+            updateButtonUsername.innerHTML = 'Undo';
             updateButtonUsername.classList.remove('btn-primary');
             updateButtonUsername.classList.add('btn-secondary');
+        } else {
+            // Hide the container and clear the input field
+            profile_hidden_username_container.classList.add('d-none');
+            first_name.value = '';
+            last_name.value = '';
+            updateButtonUsername.innerHTML = 'Update';
+            updateButtonUsername.classList.remove('btn-secondary');
+            updateButtonUsername.classList.add('btn-primary');
         }
     }
 
@@ -1179,10 +1149,14 @@ document.addEventListener('DOMContentLoaded', function() {
             var username = document.getElementById('id_username').value.trim();
             var username_validation = document.getElementById('username_validation');
             console.log(`Running jsUsernameValidation()... username is: ${username}`);
+    
+            // Clear any previous states to prevent residual styling
+            username_validation.classList.remove('text-available', 'text-taken', 'text-error');
+    
             if (username === '') {
-                console.log(`Running jsUsernameValidation()... username ==='' (username is empty)`);
+                console.log(`Running jsUsernameValidation()... username === '' (username is empty)`);
                 username_validation.innerHTML = '';
-                username_validation.style.display = 'none';
+                username_validation.classList.add('d-none');
                 submit_enabled = false;
                 resolve(submit_enabled);
             } else {
@@ -1203,28 +1177,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .then(data => {
-                    // Check the result from the server
                     if (data.username === null) {
                         username_validation.innerHTML = 'Username available';
-                        username_validation.style.color = '#22bd39';
+                        username_validation.classList.add('text-available');
                         submit_enabled = true;
                     } else {
                         username_validation.innerHTML = `Username '${data.username}' is already taken.`;
-                        username_validation.style.color = 'red';
+                        username_validation.classList.add('text-taken');
                         submit_enabled = false;
                     }
-                    username_validation.style.display = 'block';
+                    username_validation.classList.remove('d-none'); // Ensure visibility regardless of state
                     resolve(submit_enabled);
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     username_validation.innerHTML = 'An error occurred. Please try again.';
-                    username_validation.style.color = 'red';
-                    username_validation.style.display = 'block';
+                    username_validation.classList.add('text-error');
+                    username_validation.classList.remove('d-none');
                 });
             }
         });
     }
+    
+    
 
     // Function description: Enables buy button at /buy   
     function jsEnableBuySubmitButton() {

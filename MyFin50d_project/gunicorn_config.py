@@ -42,5 +42,5 @@ preload_app = False
 
 # Specify self-signed keys, so they are not needed in the command line when
 # starting gunicorn via 'gunicorn --config gunicorn_config.py homepage_project_settings.wsgi:application --bind 0.0.0.0:8000'
-certfile = './gitignored/cert.pem'
-keyfile = './gitignored/key.pem'
+certfile = './gitignored/your_certificate.pem'
+keyfile = './gitignored/your_private.key'
