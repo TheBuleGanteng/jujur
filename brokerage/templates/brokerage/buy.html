@@ -1,0 +1,146 @@
+{% extends 'layout.html' %}
+{% load brokerage_filters %}
+
+
+{% block title %}
+    Buy Stocks
+{% endblock %}
+
+{% block main %}
+
+    <div class='container-fluid pt-2 pb-5'>
+
+        <!-- boostrap5 loading spinner -->
+        <div id='loadingSpinner' class='d-flex align-items-center justify-content-center'>
+            <div>
+            <strong>Loading...</strong>
+            <div class='spinner-border ms-auto' role='status' aria-hidden='true'></div>
+            </div>
+        </div>
+        <!-- /boostrap5 loading spinner -->
+
+
+        <!-- instructional text -->
+        <div class='container-fluid ps-0 mb-1'>
+            <div class='container-fluid container-instructions-start-bold'>
+                Please enter a stock symbol and number of shares.
+            </div>
+            <div class='container-fluid container-instructions-start'>
+                Required fields
+            </div>
+        </div>
+        <!-- /instructional text -->
+
+        <!-- /buy form -->
+        <form id='buyForm' action='{% url "brokerage:buy" %}' method='post'>
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+
+            <!-- transaction_type (hidden) -->
+            {{ form.transaction_type }}
+            <!-- /transaction_type (hidden) -->
+
+            <!-- symbol -->
+            <div class='user_input_registration row'>
+                <div class='col-sm-2 user-input-registration-label'>
+                    <label for='id_symbol' class='form-label-start-req-bold'>Symbol:</label>
+                </div>
+                <div class='col-sm-8 col-md-6 col-lg-4'>
+                    {{ form.symbol }}
+                    {% if form.symbol.errors %}
+                        <div class='text-danger mt-2'>
+                            {% for error in form.symbol.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- /symbol -->
+
+            <!-- symbol validation -->
+            <div class='user_input_registration row'>
+                <label class='col-sm-2 form-label-start-req-bold'></label>
+                <div class='col-sm-8 col-md-6 col-lg-4 container-input-validation' id='symbol_validation' name='symbol_validation'>
+                        <a></a>
+                </div>
+                <div class='col-sm-2 mt-2'>
+                </div>
+            </div>
+            <!-- /symbol validation -->
+
+            <!-- symbol_live_search -->
+            <div class='user_input_registration row m-0'>
+                <label class='col-sm-2 form-label-start-req-bold'></label>
+                <div class='col-sm-8 col-md-6 col-lg-4 container-input-validation mb-0 d-none' id='symbol_live_search' name='symbol_live_search'>
+                        <a></a>
+                </div>
+            </div>
+            <!-- symbol_live_search -->
+
+            <!-- shares -->
+            <div class='user_input_registration row'>
+                <div class='col-sm-2 form-label-start-req-bold'>
+                    <label for='id_shares' class='form-label-start-req-bold'>Shares:</label>
+                </div>
+                <div class='col-sm-8 col-md-6 col-lg-4'>
+                    {{ form.shares }}
+                    {% if form.shares.errors %}
+                        <div class='text-danger mt-2'>
+                            {% for error in form.shares.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- /shares -->
+
+            <!-- shares validation -->
+            <div class='user_input_registration row'>
+                <label class='col-sm-2 form-label-start-req-bold'></label>
+                <div class='col-sm-8 col-md-6 col-lg-4 container-input-validation d-none' id='shares_validation' name='shares_validation'>
+                        <a></a>
+                </div>
+                <div class='col-sm-2 mt-2'>
+                </div>
+            </div>
+            <!-- /shares validation -->
+
+            <!-- cancel and submit buttons-->
+            <div class='row'>
+                <div class='col-sm-6 col-md-4 col-lg-3 mb-1'>
+                    <a href='{% url "brokerage:index" %}' class='btn btn-secondary w-100 mt-1 mb-1'>Back</a>
+                </div>
+                <div class='col-sm-6 col-md-4 col-lg-3 mb-1'>
+                    <button type='submit' class='btn btn-success w-100 mt-1 mb-1' id='submit_button' disabled>Purchase shares</button>
+                </div>
+            </div>
+            <!-- /cancel and submit buttons-->
+
+
+        <!-- buy confirmation modal -->
+        <div class='modal fade' id='confirmBuyModal' tabindex='-1' aria-labelledby='confirmBuyModalLabel' aria-hidden='true'>
+            <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                <h5 class='modal-title' id='confirmBuyModalLabel'>Confirm Purchase</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                Are you sure you want to buy these shares?
+                </div>
+                <div class='modal-footer'>
+                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                <button type='button' class='btn btn-success' id='confirmBuyButton'>Confirm</button>
+                </div>
+            </div>
+            </div>
+        </div>
+        <!-- /buy confirmation modal -->
+
+
+        </form>
+        <!-- /buy form -->
+
+{% endblock %}

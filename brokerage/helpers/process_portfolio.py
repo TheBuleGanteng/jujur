@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from django.utils import timezone
 import logging
 from ..models import Listing, Transaction
@@ -13,7 +14,7 @@ logger = logging.getLogger('django')
 class Portfolio:
     def __init__(self):
         # Below are portfolio totals
-        self._portfolio_data = {}
+        self.portfolio_data = {}
         self.cash_initial = 0
         self.cash = 0
         self.portfolio_total_transaction_shares = 0
@@ -69,11 +70,11 @@ class Portfolio:
 
     # Adds the symbol to portfolio
     def add_symbol(self, symbol, data):
-        self._portfolio_data[symbol] = data
+        self.portfolio_data[symbol] = data
 
     # Adds symbol-level data
     def get_symbol_data(self, symbol):
-        return self._portfolio_data.get(symbol, None)
+        return self.portfolio_data.get(symbol, None)
 
 
 # Creates an item of the portfolio class and populates it
@@ -107,28 +108,28 @@ def process_user_transactions(user):
             symbol = transaction.symbol
             
             # If a symbol is new to the portfolio, initialize it to the portfolio
-            if symbol not in portfolio._portfolio_data:
+            if symbol not in portfolio.portfolio_data:
                 
                 # When a new symbol is encountered, set up a new row with the following columns
                 portfolio.add_symbol(symbol, {
                     'symbol': symbol,
-                    'transaction_shares': 0,
-                    'shares_outstanding': 0, 
-                    'cost_basis_per_share' : 0,
-                    'cost_basis_total' : 0,
-                    'market_value_per_share': company_data(symbol, fmp_key)['price'],
-                    'market_value_total_pre_tax': 0,
-                    'gain_or_loss_pre_tax_percent': 0,
-                    'STCG_unrealized': 0,
-                    'LTCG_unrealized': 0,
-                    'CG_total_unrealized': 0,
-                    'STCG_tax_unrealized': 0,
-                    'LTCG_tax_unrealized': 0,
-                    'CG_tax_offset_unrealized': 0,
-                    'CG_total_tax_unrealized': 0,
-                    'CG_total_post_tax': 0,
-                    'market_value_post_tax': 0,
-                    'return_percent_post_tax': 0,
+                    'transaction_shares': Decimal('0'),
+                    'shares_outstanding': Decimal('0'),
+                    'cost_basis_per_share' : Decimal('0'),
+                    'cost_basis_total' : Decimal('0'),
+                    'market_value_per_share': Decimal(str(company_data(symbol)['price'])),
+                    'market_value_total_pre_tax': Decimal('0'),
+                    'gain_or_loss_pre_tax_percent': Decimal('0'),
+                    'STCG_unrealized': Decimal('0'),
+                    'LTCG_unrealized': Decimal('0'),
+                    'CG_total_unrealized': Decimal('0'),
+                    'STCG_tax_unrealized': Decimal('0'),
+                    'LTCG_tax_unrealized': Decimal('0'),
+                    'CG_tax_offset_unrealized': Decimal('0'),
+                    'CG_total_tax_unrealized': Decimal('0'),
+                    'CG_total_post_tax': Decimal('0'),
+                    'market_value_post_tax': Decimal('0'),
+                    'return_percent_post_tax': Decimal('0'),
                 })
 
             # Attach the new data fields listed above to portfolio.symbol
@@ -249,8 +250,8 @@ def process_user_transactions(user):
     portfolio.sld_transaction_gain_or_loss_pre_tax_percent = ((portfolio.sld_transaction_market_value_pre_tax_total / portfolio.sld_transaction_cost_basis_total) - 1) if portfolio.sld_transaction_cost_basis_total else "-"
     portfolio.sld_transaction_return_percent_post_tax = ((portfolio.sld_transaction_market_value_post_tax_total / portfolio.sld_transaction_cost_basis_total) - 1) if portfolio.sld_transaction_cost_basis_total else "-"
     
-    portfolio.cash = user.cash 
-    portfolio.cash_initial = user.cash_initial
+    portfolio.cash = user.userprofile.cash 
+    portfolio.cash_initial = user.userprofile.cash_initial
     logger.debug(f'running /process_user_transactions(user) ...  portfolio.cash is: { portfolio.cash }')
 
     # Step 3.5: Derive total portfolio cost basis, market value, and returns, all ex cash.
@@ -270,10 +271,10 @@ def process_user_transactions(user):
     portfolio.portfolio_cost_basis_per_share = portfolio.portfolio_cost_basis_total / portfolio.portfolio_total_shares_outstanding
     portfolio.portfolio_CG_total_unrealized = portfolio.portfolio_STCG_unrealized + portfolio.portfolio_LTCG_unrealized
     portfolio.portfolio_market_value_per_share = portfolio.portfolio_market_value_total_pre_tax / portfolio.portfolio_total_shares_outstanding
-    portfolio.portfolio_market_value_total_pre_tax_incl_cash = portfolio.portfolio_market_value_total_pre_tax + user.cash
+    portfolio.portfolio_market_value_total_pre_tax_incl_cash = portfolio.portfolio_market_value_total_pre_tax + user.userprofile.cash
     portfolio.portfolio_gain_or_loss_pre_tax_percent = (portfolio.portfolio_market_value_total_pre_tax / portfolio.portfolio_cost_basis_total) -1
     portfolio.portfolio_market_value_post_tax = portfolio.portfolio_market_value_total_pre_tax + min((-portfolio.portfolio_total_tax_unrealized + portfolio.portfolio_CG_tax_offset_unrealized),0)
-    portfolio.portfolio_market_value_post_tax_incl_cash = portfolio.portfolio_market_value_post_tax + user.cash
+    portfolio.portfolio_market_value_post_tax_incl_cash = portfolio.portfolio_market_value_post_tax + user.userprofile.cash
     portfolio.portfolio_return_percent_post_tax = (portfolio.portfolio_market_value_post_tax / portfolio.portfolio_cost_basis_total) -1
     
     # Below are calculations for total portfolio performance, incl. 

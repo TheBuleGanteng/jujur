@@ -200,13 +200,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.jsShowHiddenNameField = jsShowHiddenNameField;
     window.jsShowHiddenUsernameField = jsShowHiddenUsernameField; 
     
-    /* POTENTIALLY REMOVE
-    window.jsUpdateTaxRateDisplaySTCG = jsUpdateTaxRateDisplaySTCG;
-    window.jsUpdateTaxRateDisplayLTCG = jsUpdateTaxRateDisplayLTCG;
-    POTENTIALLY REMOVE */
-
-
-
     // register
     window.jsPasswordValidation = jsPasswordConfirmationValidation
     window.jsPasswordConfirmationValidation = jsPasswordConfirmationValidation;
@@ -214,10 +207,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make the following variables globally accessible 
     let initial_accounting_method;
     let initial_tax_loss_offsets;
-    /* POTENTIALLY REMOVE
-    let initial_tax_rate_STCG_value;
-    let initial_tax_rate_LTCG_value;
-    */
     let debounce_timeout = 200;
     let symbolValidationPassed = false;
     let sharesValidationPassed = false;
@@ -228,18 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (document.getElementById('id_tax_loss_offsets')) {        
         initial_tax_loss_offsets = document.getElementById('id_tax_loss_offsets').value;
-    }
-
-    /* POTENTIALLY REMOVE
-    if (document.getElementById('tax_rate_STCG_value')) {
-        initial_tax_rate_STCG_value = parseFloat(document.getElementById('tax_rate_STCG_value').innerText.replace('%', ''));
-    } 
-    if (document.getElementById('tax_rate_LTCG_value')) {
-        initial_tax_rate_LTCG_value = parseFloat(document.getElementById('tax_rate_LTCG_value').innerText.replace('%', ''));
-    }
-    */
-
-    
+    }    
 
     // Set debounce function globally
     // Debounce function
@@ -257,8 +235,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.location.href.includes('/buy')) {
         console.log("Running myFinance50.js for /buy... ");
 
-        var symbol = document.getElementById('symbol');
-        var shares = document.getElementById('shares');
+        var symbol = document.getElementById('id_symbol');
+        var shares = document.getElementById('id_shares');
         var submitButton = document.getElementById('submit_button');
         
 
@@ -271,6 +249,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // Debounced symbol validation function
+        function debouncedSymbolLiveSearch() {
+            // Immediately disable the submit button when input changes
+            submitButton.disabled = true;
+            jsSymbolLiveSearch();
+        }
+        
         // Function that wraps jsSharesValidation with debouncing
         function debouncedSharesValidation() {
             // Immediately disable the submit button when input changes
@@ -280,22 +265,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        function eventHandler() {
-            jsSymbolValidationNew(jsEnableBuySubmitButton); // Validate in real-time
-            debounce(debouncedSymbolValidation)(); // Debounce and run additional validation
-        }
-
         if (symbol) {
-            symbol.addEventListener('keyup', eventHandler);
-            symbol.addEventListener('change', eventHandler);
+            symbol.addEventListener('keyup', debounce(debouncedSymbolLiveSearch, 300))
+            symbol.addEventListener('change', debounce(debouncedSymbolValidation, 300))
         }
         
         if (shares) {
-            document.getElementById('shares').addEventListener('input', debounce(debouncedSharesValidation, 500)); // Using the same timeout for consistency
+            shares.addEventListener('input', debounce(debouncedSharesValidation, 300)); // Using the same timeout for consistency
         }
 
 
-        const buyForm = document.querySelector('form[action="/buy"]');
+        const buyForm = document.getElementById('buyForm');
         buyForm.addEventListener('submit', function (e) {
             e.preventDefault(); // Prevent form from submitting
             const confirmModal = new bootstrap.Modal(document.getElementById('confirmBuyModal'));
@@ -495,19 +475,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        /*
-        const buyForm = document.querySelector('form[action="/buy"]');
-        buyForm.addEventListener('submit', function (e) {
-            e.preventDefault(); // Prevent form from submitting
-            const confirmModal = new bootstrap.Modal(document.getElementById('confirmBuyModal'));
-            confirmModal.show();
-        });
-
-        const confirmBuyButton = document.getElementById('confirmBuyButton');
-        confirmBuyButton.addEventListener('click', function () {
-            buyForm.submit(); // Submit the form
-        });
-        */
     }
     // /javascript for profile -----------------------------------------------
 
@@ -868,30 +835,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
+
+
+
     // Function description: Tells user if (a) stock symbol is valid and (b) if the buy or sell txn can proceed.
     function jsSharesValidation() {
         return new Promise((resolve, reject) => {
-            var transaction_type = document.getElementById('transaction_type').value;
-            var symbol = document.getElementById('symbol').value.trim();
-            var shares = document.getElementById('shares').value;
+            var transaction_type = document.getElementById('id_transaction_type').value;
+            var symbol = document.getElementById('id_symbol');
+            var user_input_symbol = symbol.value;
+            console.log(`running jsSharesValidation ... user_input_symbol is ${ user_input_symbol }`)
+            var shares = document.getElementById('id_shares');
+            var user_input_shares = shares.value;
             var shares_validation = document.getElementById('shares_validation');
-            console.log(`Running jsSharesValidation()`);
-            console.log(`Running jsSharesValidation()... symbol is: ${symbol}`);
-            console.log(`running jsSharesValidation()... CSRF Token is: ${csrfToken}`);
-            
+            console.log(`running jsSharesValidation ... user_input_shares is ${ user_input_shares }`)
+
+
+
             sharesValidationPassed = false;
 
-            if (shares === '' || symbol === '') {
-                console.log(`Running jsSharesValidation()... shares or symbol is empty)`);
+            if (user_input_shares === '' || user_input_symbol === '') {
                 shares_validation.innerHTML = '';
-                shares_validation.style.display = 'none';
+                shares_validation.classList.add('d-none');
                 sharesValidationPassed = false;
                 resolve(sharesValidationPassed);
             } else {
-                console.log(`Running jsSharesValidation()... shares is not empty`);
-                fetch('/check_valid_shares', {
+                fetch('/check-shares/', {
                     method: 'POST',
-                    body: new URLSearchParams({ 'user_input_symbol': symbol, 'user_input_shares': shares, 'transaction_type': transaction_type }),
+                    body: new URLSearchParams({ 'symbol': user_input_symbol, 'shares': user_input_shares, 'transaction_type': transaction_type }),
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                         'X-CSRFToken': csrfToken,
@@ -905,23 +876,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .then(response => {
-                    if (response['status'] === 'error') {
-                        shares_validation.innerHTML = response['message'];
-                        shares_validation.style.color = 'red';
-                        sharesValidationPassed = false;
-                    } else {
-                        shares_validation.innerHTML = response['message']
-                        shares_validation.style.color = '#22bd39';
+                    if (response.success) {
+                        shares_validation.classList.remove('text-taken');
+                        shares_validation.classList.add('text-available');
+                        shares_validation.innerHTML = response.message;
                         sharesValidationPassed = true;
+                    } else {
+                        shares_validation.classList.remove('text-available');
+                        shares_validation.classList.add('text-taken');
+                        shares_validation.innerHTML = response.message;
+                        sharesValidationPassed = false;
                     }
-                    shares_validation.style.display = 'block';
+                    shares_validation.classList.remove('d-none');
                     resolve(sharesValidationPassed);
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    shares_validation.classList.remove('d-none');
+                    shares_validation.classList.remove('text-available')
+                    shares_validation.classList.add('text-taken');
                     shares_validation.innerHTML = 'An error occurred. Please try again.';
-                    shares_validation.style.color = 'red';
-                    shares_validation.style.display = 'block';
                     sharesValidationPassed = false;
                     resolve(sharesValidationPassed);
                 });
@@ -992,56 +965,54 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function description: Tells user if a stock symbol.
     function jsSymbolValidation() {
         return new Promise((resolve, reject) => {
-            var symbol = document.getElementById('symbol').value.trim();
-            var shares = document.getElementById('shares');
+            var symbol = document.getElementById('id_symbol')
             var symbol_validation = document.getElementById('symbol_validation');
+            var user_input = symbol.value.trim();
             console.log(`Running jsSymbolValidation()`);
-            console.log(`Running jsSymbolValidation()... symbol is: ${symbol}`);
-            console.log(`running jsSymbolValidation()... CSRF Token is: ${csrfToken}`);
-
+            
             symbolValidationPassed = false;
 
-            if (symbol === '') {
+            if (user_input === '') {
                 console.log(`Running jsSymbolValidation()... symbol ===' ' (symbol is empty)`);
                 symbol_validation.innerHTML = '';
-                symbol_validation.style.display = 'none';
+                symbol_validation.classList.add('d-none');
                 symbolValidationPassed = false;
                 resolve(symbolValidationPassed);
+        
             } else {
-                console.log(`Running jsSymbolValidation()... symbol is not empty. Symbol is: ${ symbol }`);
-                fetch('/check_valid_symbol', {
+                console.log(`Running jsSymbolValidation()... symbol is not empty. Symbol is: ${ user_input }`);
+                fetch('/check-symbol/', {
                     method: 'POST',
-                    body: new URLSearchParams({ 'user_input': symbol }),
+                    body: new URLSearchParams({ 'symbol': user_input }),
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                         'X-CSRFToken': csrfToken,
                     }
                 })
-                .then(response => {
-                    if (response.ok) {
-                        return response.text();
-                    } else {
-                        throw new Error('Running jsSymbolValidation()... server responded with a non-200 status');
-                    }
-                })
-                .then(text => {
-                    if (text === 'False') {
-                        symbol_validation.innerHTML = 'Invalid symbol';
-                        symbol_validation.style.color = 'red';
-                        symbolValidationPassed = false;
-                    } else {
+                .then(response => response.json())
+                .then(data => {
+                    console.log(`Data received: ${JSON.stringify(data.data)}`); // Log the entire data.data array
+                                            
+                    if (data.success && data.data.some(entry => entry.symbol.toUpperCase() === user_input.toUpperCase())) {
+                        console.log(`Valid symbol found: ${symbol}`);    
+                        // Do the formatting and populating for symbol_validation
+                        symbol_validation.classList.remove('text-taken', 'd-none');
+                        symbol_validation.classList.add('text-available');
                         symbol_validation.innerHTML = 'Valid symbol';
-                        symbol_validation.style.color = '#22bd39';
                         symbolValidationPassed = true;
+                    } else {
+                        symbol_validation.classList.remove('text-available', 'd-none');
+                        symbol_validation.classList.add('text-taken');
+                        symbol_validation.innerHTML = data.error || 'Invalid symbol';
+                        symbolValidationPassed = false;
                     }
-                    symbol_validation.style.display = 'block';
                     resolve(symbolValidationPassed);
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     symbol_validation.innerHTML = 'An error occurred. Please try again.';
-                    symbol_validation.style.color = 'red';
-                    symbol_validation.style.display = 'block';
+                    symbol_validation.classList.remove('text-available', 'd-none');
+                    symbol_validation.classList.add = 'text-taken';
                     sharesValidationPassed = false;
                     resolve(sharesValidationPassed);
                 });
@@ -1049,25 +1020,79 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Function description: Tells user if a stock symbol.
+    function jsSymbolLiveSearch() {
+        return new Promise((resolve, reject) => {
+            var symbol = document.getElementById('id_symbol')
+            var symbol_validation = document.getElementById('symbol_validation');
+            var symbol_live_search = document.getElementById('symbol_live_search');
+            var user_input = symbol.value.trim();
+            console.log(`Running jsSymbolLiveSearch()`);
+            
+            if (user_input === '') {
+                console.log(`Running jsSymbolLiveSearch()... symbol ===' ' (symbol is empty)`);
+                symbol_live_search.innerHTML = '';
+                symbol_live_search.classList.add('d-none');
+            } else {
+                console.log(`Running jsSymbolLiveSearch()... symbol is not empty. Symbol is: ${ symbol }`);
+                fetch('/check-symbol/', {
+                    method: 'POST',
+                    body: new URLSearchParams({ 'symbol': user_input }),
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrfToken,
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(`Data received: ${JSON.stringify(data.data)}`); // Log the entire data.data array
+                                            
+                    // Do the formatting and populating for symbol_live_search
+                    if (data.success) {
+                        symbol_live_search.innerHTML = '';
+                        symbol_live_search.classList.remove('d-none');
+                        data.data.forEach(item => {
+                            // Create a new child div for each record in the JSON object
+                            const div = document.createElement('div')
+                            // Populate that newly-created div as follows.
+                            div.innerHTML = `${item.symbol} - ${item.name} - ${item.exchange_short}<br/>`;
+                            // Add the 'result-button' class to this div
+                            div.classList.add('btn', 'btn-outline-secondary', 'custom-btn-company-search');
+                            // Set click event listener for each button
+                            div.addEventListener('click', function() {
+                                symbol.blur(); // Remove focus from the input
+                                symbol.value = item.symbol; // Populate the symbol input field with the clicked symbol
+                                symbol_live_search.innerHTML = '';
+                                symbol_live_search.classList.add('d-none');
 
+                            });
+                            // Append the new child div to the parent container
+                            symbol_live_search.appendChild(div);
+                        });
+                    }
+                })
+            }
+        });
+    }
+
+
+    /*
     // Function description: Validates user input, searching on symbol or company name
     function jsSymbolValidationNew(enableSubmitButtonFunction) {
-        var symbol = document.getElementById('symbol');
+        var symbol = document.getElementById('id_symbol');
         var symbol_validation2 = document.getElementById('symbol_validation2');
         console.log(`Running jsSymbolValidationNew()`);
-        console.log(`Running jsSymbolValidationNew()... symbol is: ${symbol}`);
-        console.log(`running jsSymbolValidationNew()... CSRF Token is: ${csrfToken}`);
-    
+        
         // Handles if no user entry for symbol
         if (symbol.value.trim() === '') {
             console.log(`Running jsSymbolValidationNew()... symbol ===' ' (symbol is empty)`);
             symbol_validation2.innerHTML = '';
-            symbol_validation2.style.display = 'none';
+            symbol_validation2.classList.add = 'd-none';
             
         // Handles if there is user entry for symbol
         } else {
                 console.log(`Running jsSymbolValidationNew()... symbol is not empty. Symbol is: ${ symbol }`);
-                fetch('/check_valid_symbol_new', {
+                fetch('/check-symbol', {
                 method: 'POST',
                 body: new URLSearchParams({ 'user_input': symbol.value.trim() }),
                 headers: {
@@ -1080,7 +1105,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 // First, clear any existing contents from symbol_validation2 and make the object visible
                 symbol_validation2.innerHTML = '';
-                symbol_validation2.style.display = 'block';
+                symbol_validation2.classList.remove = 'd-none';
+                //symbol_validation2.classList.add = 'block';
                 // Iterate over the data and append each result to symbol_validation2's innerHTML
                 data.forEach(item => {
                     // Create a new child div for each record in the JSON object
@@ -1106,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.length === 0) {
                     // If no results, display a message
                     symbol_validation2.innerHTML = '';
-                    symbol_validation2.style.display = 'none';
+                    symbol_validation2.classList.add = 'd-none';
                 }
             })
             .catch(error => {
@@ -1114,7 +1140,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 symbol_validation2.innerHTML = 'Error fetching symbol data';
             });
         }
-    }    
+    } 
+    */   
 
 
 

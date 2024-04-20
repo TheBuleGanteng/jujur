@@ -218,7 +218,7 @@ def index(request):
 
 # Returns the email if registered or otherwise, None
 # Used with jsEmailValidation()
-@require_http_methods(["POST"])
+@require_http_methods(['POST'])
 def check_email_registered_view(request):
     logger.debug('running users app, check_email_registered_view(request) ... view started')
 
@@ -662,7 +662,7 @@ def profile_view(request):
                 if user.username != username and retrieve_username(username):
                     logger.error(f'running users app, profile_view ... user entered an already-registered username. Flashing error msg and rendering register.html ')
                     messages.error(request, 'Error: username is already registered.')
-                    return render(request, "users/profile.html", context)
+                    return render(request, 'users/profile.html', context)
                 
                 # Assemble the user object fields into a list and the profile object fields into a list.
                 user_fields = ['first_name', 'last_name', 'username']
