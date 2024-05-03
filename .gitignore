@@ -9,3 +9,5 @@ entrypoint.sh
 scripts/
 logs/
 supervisord.conf
+*tests.py
+requirements_copy.txt
