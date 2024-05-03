@@ -245,7 +245,7 @@
             <div class='user_input_registration row'>        
                 <label for='{{ form.tax_loss_offsets.id_for_label }}' class='col-sm-2 form-label-start-bold'>{{ form.tax_loss_offsets.label }}</label>
                 <div class='col-11 col-sm-8 col-md-6 col-lg-4'>
-                    <input type='hidden' id='initial_tax_loss_offsets' value='{{ user.userprofile.initial_tax_loss_offsets }}'>
+                    <input type='hidden' id='initial_tax_loss_offsets' value='{{ user.userprofile.tax_loss_offsets }}'>
                     {{ form.tax_loss_offsets }}
                 </div>
                 <div class='col-sm-2 mt-2'>

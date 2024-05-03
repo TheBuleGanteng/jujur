@@ -18,105 +18,116 @@
         </div>
         <!-- /boostrap5 loading spinner -->
 
-        <h2>{{ user.username }}'s Portfolio</h2>
-
         <!-- Do the things below if the user has a portfolio -->
         {% if portfolio.portfolio_data.items %}
-        <div class="table-responsive-lg">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <!-- Below are the headers for the table that shows stock info -->
-                        <th>Symbol</th>
-                        <th>Shares outstanding</th>
-                        <th>Market value per shr.</th>
-                        <th>Total cost basis</th>
-                        <th>Cap. gains</th>
-                        <th>Total mkt. value, pre-tax</th>         
-                        <th>Gain/loss, pre-tax (%)</th>
-                        <th>Cap. gains tax</th>
-                        <th>Tax offset</th>
-                        <th>Total mkt. value, post-tax</th>
-                        <th>Gain/loss, post-tax (%)</th>
-                    </tr>
-                </thead>
-                
-                <tbody>    
-                    {% for symbol, data in portfolio.portfolio_data.items %}
-                    <!-- metrics for open positions, consolidated on {{ symbol }} -->
-                    <tr>
-                        <td><a href="/quote?symbol={{ symbol }}">{{ symbol }}</a></td>
-                        <td>{{ data.shares_outstanding  }}</td>                    
-                        <td>{{ data.market_value_per_share | filter_usd }}</td>
-                        <td>{{ data.cost_basis_total | filter_usd }}</td>
-                        <td>{{ data.CG_total_unrealized | filter_usd }} </td>
-                        <td>{{ data.market_value_total_pre_tax | filter_usd }} </td>
-                        <td>{{ data.gain_or_loss_pre_tax_percent | filter_percentage }} </td>
-                        <td>{{ data.CG_total_tax_unrealized | filter_usd }} </td>
-                        <td>{{ data.CG_tax_offset_unrealized | filter_usd }} </td>
-                        <td>{{ data.market_value_post_tax | filter_usd }} </td>
-                        <td>{{ data.return_percent_post_tax | filter_percentage }} </td>
-                    </tr>
-                    <!-- /metrics for open positions, consolidated on {{ symbol }} -->
-                    {% endfor %}
-                        
-                    <!-- metrics for open position totals -->
-                    <tr id='table-totals'>
-                        <td>Current portfolio, ex cash</td>
-                        <td>{{ portfolio.portfolio_total_shares_outstanding }}</td>
-                        <td>-</td>
-                        <td>{{ portfolio.portfolio_cost_basis_total | filter_usd }}</td>
-                        <td>{{ portfolio.portfolio_CG_unrealized | filter_usd }}</td>
-                        <td>{{ portfolio.portfolio_market_value_total_pre_tax | filter_usd }}</td>
-                        <td>{{ portfolio.portfolio_gain_or_loss_pre_tax_percent | filter_percentage }}</td>
-                        <td>{{ portfolio.portfolio_total_tax_unrealized | filter_usd }}</td>
-                        <td>{{ portfolio.portfolio_CG_tax_offset_unrealized | filter_usd }}</td>
-                        <td>{{ portfolio.portfolio_market_value_post_tax | filter_usd }}</td>
-                        <td>{{ portfolio.portfolio_return_percent_post_tax | filter_percentage }}</td>                   
-                    </tr>
-                    <!-- /metrics for open position totals -->
-                    
-                    <!-- metrics for cash -->
-                    <tr>
-                        <td>Cash</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>{{ portfolio.cash | filter_usd }}</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>{{ portfolio.cash | filter_usd }}</td></td>
-                        <td>-</td>
-                    </tr>
-                    <!-- /metrics for cash -->
+            
+            <!-- link to index-detail -->
+            <div class='row text-start mb-3'>
+                <a href='{% url "brokerage:index_detail" %}' class='text-start'>Switch to detailed view</a>
+            </div>
+            <!-- /link to index-detail -->
+        
+            <h2>{{ user.username }}'s Portfolio</h2>
 
-                    <!-- metrics for open position totals + cash -->
-                    <tr id='table-totals-no-bottom'>
-                        <td>Current portfolio, inc. cash</td>
-                        <td>{{ portfolio.portfolio_total_shares_outstanding }}</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>{{ portfolio.portfolio_market_value_total_pre_tax_incl_cash | filter_usd }}</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>{{ portfolio.portfolio_market_value_post_tax_incl_cash | filter_usd }}</td>
-                        <td>-</td>                   
-                    </tr>
-                    <!-- /metrics for open position totals + cash -->
-                </tbody>
-            </table>
-        </div>
-            <!-- /do the things below if the user has a portfolio -->
+            <!-- table for index -->
+            <div class="table-responsive-lg">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <!-- Below are the headers for the table that shows stock info -->
+                            <th>Symbol</th>
+                            <th>Shares outstanding</th>
+                            <th>Market value per shr.</th>
+                            <th>Total cost basis</th>
+                            <th>Cap. gains</th>
+                            <th>Total mkt. value, pre-tax</th>         
+                            <th>Gain/loss, pre-tax (%)</th>
+                            <th>Cap. gains tax</th>
+                            <th>Tax offset</th>
+                            <th>Total mkt. value, post-tax</th>
+                            <th>Gain/loss, post-tax (%)</th>
+                        </tr>
+                    </thead>
+                    
+                    <tbody>    
+                        {% for symbol, data in portfolio.portfolio_data.items %}
+                            {% if data.shares_outstanding > 0 %}
+                                <!-- metrics for open positions, consolidated on {{ symbol }} -->
+                                <tr>
+                                    <td><a href="/quote?symbol={{ symbol }}">{{ symbol }}</a></td>
+                                    <td>{{ data.shares_outstanding  }}</td>                    
+                                    <td>{{ data.market_value_per_share | filter_usd }}</td>
+                                    <td>{{ data.cost_basis_total | filter_usd }}</td>
+                                    <td>{{ data.CG_total_unrealized | filter_usd }} </td>
+                                    <td>{{ data.market_value_total_pre_tax | filter_usd }} </td>
+                                    <td>{{ data.gain_or_loss_pre_tax_percent | filter_percentage }} </td>
+                                    <td>{{ data.CG_total_tax_unrealized | filter_usd }} </td>
+                                    <td>{{ data.CG_tax_offset_unrealized | filter_usd }} </td>
+                                    <td>{{ data.market_value_post_tax | filter_usd }} </td>
+                                    <td>{{ data.return_percent_post_tax | filter_percentage }} </td>
+                                </tr>
+                                <!-- /metrics for open positions, consolidated on {{ symbol }} -->
+                            {% endif %}
+                        {% endfor %}
+                            
+                        <!-- metrics for open position totals -->
+                        <tr id='table-totals'>
+                            <td>Current portfolio, ex cash</td>
+                            <td>{{ portfolio.portfolio_total_shares_outstanding }}</td>
+                            <td>-</td>
+                            <td>{{ portfolio.portfolio_cost_basis_total | filter_usd }}</td>
+                            <td>{{ portfolio.portfolio_CG_unrealized | filter_usd }}</td>
+                            <td>{{ portfolio.portfolio_market_value_total_pre_tax | filter_usd }}</td>
+                            <td>{{ portfolio.portfolio_gain_or_loss_pre_tax_percent | filter_percentage }}</td>
+                            <td>{{ portfolio.portfolio_total_tax_unrealized | filter_usd }}</td>
+                            <td>{{ portfolio.portfolio_CG_tax_offset_unrealized | filter_usd }}</td>
+                            <td>{{ portfolio.portfolio_market_value_post_tax | filter_usd }}</td>
+                            <td>{{ portfolio.portfolio_return_percent_post_tax | filter_percentage }}</td>                   
+                        </tr>
+                        <!-- /metrics for open position totals -->
+                        
+                        <!-- metrics for cash -->
+                        <tr>
+                            <td>Cash</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>{{ portfolio.cash | filter_usd }}</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>{{ portfolio.cash | filter_usd }}</td></td>
+                            <td>-</td>
+                        </tr>
+                        <!-- /metrics for cash -->
+
+                        <!-- metrics for open position totals + cash -->
+                        <tr id='table-totals-no-bottom'>
+                            <td>Current portfolio, inc. cash</td>
+                            <td>{{ portfolio.portfolio_total_shares_outstanding }}</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>{{ portfolio.portfolio_market_value_total_pre_tax_incl_cash | filter_usd }}</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>{{ portfolio.portfolio_market_value_post_tax_incl_cash | filter_usd }}</td>
+                            <td>-</td>                   
+                        </tr>
+                        <!-- /metrics for open position totals + cash -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- /table for index -->
 
         {% else %}
+
             <!-- do the things below if the user does not have a portfolio (e.g. a new user) -->
             <div class='row'>
                 <a href='{# url "brokerage:quote" #}#' class='btn btn-primary w-25 m-2'>Click to get quotes</a>
-                <a href='{# url "brokerage:buy" #}#' class='btn btn-primary w-25 m-2'>Click to purchase stocks</a>
+                <a href='{% url "brokerage:buy" %}' class='btn btn-primary w-25 m-2'>Click to purchase stocks</a>
             </div>
             <!-- /do the things below if the user does not have a portfolio (e.g. a new user) -->
         {% endif %}

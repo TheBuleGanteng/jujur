@@ -25,8 +25,16 @@ window.addEventListener('load', function() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM content loaded in myFinance50.js.');
     
+    // Get the CSRF token from the meta tag in layout.html
+    var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-
+    // Function to setup headers for AJAX requests
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    
+    
     // Allow for tooltip text to appear on any page where it is located. 
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
@@ -34,7 +42,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 
-    
     // Show the value of a slider wherever it appears on a page
     if (document.querySelector('.form-control-range[type="range"]')) {
         console.log('from myFinance50.js, adjusting slider output .... ');
@@ -108,9 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.onload = resetTimer;
     }
 
-
-
-
+        
     // Function to format the value of fields with class='form-control USD' as $X,XXX.XX
     function formatInputValue(event) {
         let element = event.target; // The element that triggered the event
@@ -140,7 +145,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.form-control.USD').forEach(function(element) {
         element.addEventListener('blur', formatInputValue);
     });
-
 
 
     // Function to un-format the value of fields with class='form-control USD' before form submission
@@ -187,22 +191,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    
+    // Control the visibility of the spinner (used while AJAX functions are running)
+    function toggleSpinner(show) {
+        var spinner = document.getElementById('loadingSpinner');
+        if (spinner) {
+            if (show) {
+                spinner.classList.add('d-flex');
+                spinner.classList.remove('d-none');
+            } else {
+                spinner.classList.remove('d-flex');
+                spinner.classList.add('d-none');
+            }
+        }
+    }
     
     // Declaration of global variables and functions------------------------------------------------------------
-    // buy
-    window.jsSymbolValidation = jsSymbolValidation
-    window.jsSharesValidation = jsSharesValidation
-    // password_change
-    // password_reset
-    // password_reset_confirmation
-    // profile
-    window.jsShowHiddenNameField = jsShowHiddenNameField;
-    window.jsShowHiddenUsernameField = jsShowHiddenUsernameField; 
-    
-    // register
-    window.jsPasswordValidation = jsPasswordConfirmationValidation
-    window.jsPasswordConfirmationValidation = jsPasswordConfirmationValidation;
     
     // Make the following variables globally accessible 
     let initial_accounting_method;
@@ -220,7 +223,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }    
 
     // Set debounce function globally
-    // Debounce function
     function debounce(func, timeout = debounce_timeout){
         let timer;
         return (...args) => {
@@ -249,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Debounced symbol validation function
+        // Debounced SymbolLiveSearch function
         function debouncedSymbolLiveSearch() {
             // Immediately disable the submit button when input changes
             submitButton.disabled = true;
@@ -258,10 +260,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Function that wraps jsSharesValidation with debouncing
         function debouncedSharesValidation() {
-            // Immediately disable the submit button when input changes
-            submitButton.disabled = true;
+            submitButton.disabled = true; // Immediately disable the submit button when input changes
+            toggleSpinner(true); // Show spinner
             jsSharesValidation().then(() => {
                 jsEnableBuySubmitButton(); // Check if the button should be enabled
+                toggleSpinner(false); // Hide spinner
             });
         }
 
@@ -271,10 +274,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (shares) {
-            shares.addEventListener('input', debounce(debouncedSharesValidation, 300)); // Using the same timeout for consistency
+            shares.addEventListener('keyup', debounce(debouncedSharesValidation, 100)); // Using the same timeout for consistency
         }
 
-
+        
         const buyForm = document.getElementById('buyForm');
         buyForm.addEventListener('submit', function (e) {
             e.preventDefault(); // Prevent form from submitting
@@ -286,10 +289,10 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmBuyButton.addEventListener('click', function () {
             buyForm.submit(); // Submit the form
         });
+        
 
-    }
-    
-    // /javascript for buy ------------------------------------------
+    }    
+    // /javascript for buy -----------------------------------------------------
 
 
     
@@ -349,6 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // /javascript for password_request_reset---------------------------------
 
+
     
     // javascript for password_reset_confirmation------------------------------
     if (window.location.href.includes('/password-reset-confirmation')) {
@@ -375,7 +379,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // /javascript for password_reset_confirmation-----------------------------
 
-        
+    
+    
     // javascript for profile ------------------------------------------------
     if (window.location.href.includes('/profile')) {
         console.log("Running myFinance50.js for /profile... ");
@@ -464,29 +469,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (tax_rate_LTCG) {
-            /* POTENTIALLY REMOVE
-            jsUpdateTaxRateDisplayLTCG(tax_rate_STCG, tax_rate_STCG_value);
-            POTENTIALLY REMOVE */
             document.getElementById('id_tax_rate_LTCG').addEventListener('input', function() { 
-                /* POTENTIALLY REMOVE
-                jsUpdateTaxRateDisplayLTCG(tax_rate_LTCG, tax_rate_LTCG_value);
-                POTENTIALLY REMOVE */
                 jsEnableProfileSubmitButton();
             });
         }
-
     }
     // /javascript for profile -----------------------------------------------
+
 
 
     // javascript for quote ---------------------------------------------------
     if (window.location.href.includes('/quote')) {
         console.log("Running myFinance50.js for /quote... ");
         
-        var symbol = document.getElementById('symbol');
+        var symbol = document.getElementById('id_symbol');
         var submitButton = document.getElementById('submit_button');
         
-
         // Debounced symbol validation function
         function debouncedSymbolValidation() {
             // Immediately disable the submit button when input changes
@@ -496,17 +494,21 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        function eventHandler() {
-            jsSymbolValidationNew(jsEnableQuoteSubmitButton); // Validate in real-time
-            debounce(debouncedSymbolValidation)(); // Debounce and run additional validation
+        // Debounced SymbolLiveSearch function
+        function debouncedSymbolLiveSearch() {
+            // Immediately disable the submit button when input changes
+            submitButton.disabled = true;
+            jsSymbolLiveSearch();
         }
-
+        
         if (symbol) {
-            symbol.addEventListener('keyup', eventHandler);
-            symbol.addEventListener('change', eventHandler);
-        }
+            symbol.addEventListener('keyup', debounce(debouncedSymbolLiveSearch, 300))
+            symbol.addEventListener('keyup', debounce(debouncedSymbolValidation, 300))
+            symbol.addEventListener('change', debounce(debouncedSymbolValidation, 300))
+        }    
     }
     // /javascript for quote ---------------------------------------------------
+
 
 
     // javascript for register -----------------------------------------------
@@ -558,7 +560,6 @@ document.addEventListener('DOMContentLoaded', function() {
             username.addEventListener('input', debounce(debouncedUsernameValidation, 300));
         }
         
-
         if (password) {
             password.addEventListener('input', function() {
                 jsPasswordValidation();
@@ -572,28 +573,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 jsEnableRegisterSubmitButton();
             });
         }
-        
     } 
     // /javascript for register ----------------------------------------------
+
 
 
     // javascript for sell ------------------------------------------
     if (window.location.href.includes('/sell')) {
         console.log('running myFinance50.js for /sell ... ');
         
-        var symbol = document.getElementById('symbol');
-        var shares = document.getElementById('shares');
+        var symbol = document.getElementById('id_symbol');
+        var shares = document.getElementById('id_shares');
+        var submitButton = document.getElementById('submit_button');
         
-
-        // Function that wraps jsSymbolValidation with debouncing
+        // Function that wraps jsSharesValidation with debouncing
         function debouncedSharesValidation() {
-            jsSharesValidation().then(submit_enabled => {
-                jsEnableSellSubmitButton();
+            submitButton.disabled = true; // Immediately disable the submit button when input changes
+            toggleSpinner(true); // Show spinner
+            jsSharesValidation().then(() => {
+                jsEnableSellSubmitButton(); // Check if the button should be enabled
+                toggleSpinner(false); // Hide spinner
             });
         }
 
         if (symbol) {
-            document.getElementById('symbol').addEventListener('input', function() {
+            symbol.addEventListener('input', function() {
                 // Trigger jsSharesValidation and jsEnableSellSubmitButton
                 jsSharesValidation().then(() => {
                     jsEnableSellSubmitButton();
@@ -602,10 +606,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (shares) {
-            document.getElementById('shares').addEventListener('input', debounce(debouncedSharesValidation, 500)); // Using the same timeout for consistency
+            shares.addEventListener('input', debounce(debouncedSharesValidation, 500)); // Using the same timeout for consistency
         }
 
-        const sellForm = document.querySelector('form[action="/sell"]');
+        const sellForm = document.getElementById('SellForm');;
         sellForm.addEventListener('submit', function (e) {
             e.preventDefault(); // Prevent form from submitting
             const confirmModal = new bootstrap.Modal(document.getElementById('confirmSellModal'));
@@ -615,14 +619,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const confirmSellButton = document.getElementById('confirmSellButton');
         confirmSellButton.addEventListener('click', function () {
             sellForm.submit(); // Submit the form
-        });
+        });        
     }
     // /javascript for sell ------------------------------------------
 
 
 
+
     // Function definitions -------------------------------------------------------------------    
 
+    // The function below provides feedback to the user re: whether a user-inputted email address is already associated with an account.
     function jsEmailValidation() {
         return new Promise((resolve, reject) => {
             var email = document.getElementById('id_email').value.trim();
@@ -680,7 +686,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-    // Function description: Provides real-time feedback to user whether input meets PW requirements.
+    // Provides feedback to user whether user-inputted PW meets PW requirements.
     function jsPasswordValidation() {
         return new Promise((resolve, reject) => {
             var password = document.getElementById('id_password').value.trim();
@@ -768,7 +774,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Function description: Provides real-time feedback to user if password == password_confirmation.
+
+    // Provides feedback to user regarding whether user-inputted password == user-inputted password_confirmation.
     function jsPasswordConfirmationValidation() {
         return new Promise((resolve, reject) => {
             var password = document.getElementById('id_password').value.trim();
@@ -836,9 +843,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-
-
-    // Function description: Tells user if (a) stock symbol is valid and (b) if the buy or sell txn can proceed.
+    // Tells user if the buy or sell transaction can proceed subject to sufficient cash (share purchase) or sufficient shares held (share sale).
     function jsSharesValidation() {
         return new Promise((resolve, reject) => {
             var transaction_type = document.getElementById('id_transaction_type').value;
@@ -903,7 +908,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Function description: When box is clicked, input boxes for fist and last name appear.
+
+    // On the profile page, when the box to update the user's name is clicked, input boxes for fist and last name appear.
     function jsShowHiddenNameField() {
         var profile_hidden_name_container = document.getElementById('profile_hidden_name_container');
         var first_name = document.getElementById('id_first_name');
@@ -933,7 +939,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Function description: When box is clicked, input boxes for username appears.
+    // On the profile page, when the box to update username is clicked, input boxes for username appears.
     function jsShowHiddenUsernameField() {
         /* Pull in the relevant elements from the html */
         var profile_hidden_username_container = document.getElementById('profile_hidden_username_container');
@@ -962,7 +968,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Function description: Tells user if a stock symbol.
+    // Tells user if a stock symbol is valid (checks listings table in DB).
     function jsSymbolValidation() {
         return new Promise((resolve, reject) => {
             var symbol = document.getElementById('id_symbol')
@@ -1020,7 +1026,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Function description: Tells user if a stock symbol.
+    // Provides suggestions for company symbol, based on user-input for symbol. Searches listings table in DB.
     function jsSymbolLiveSearch() {
         return new Promise((resolve, reject) => {
             var symbol = document.getElementById('id_symbol')
@@ -1076,101 +1082,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    /*
-    // Function description: Validates user input, searching on symbol or company name
-    function jsSymbolValidationNew(enableSubmitButtonFunction) {
-        var symbol = document.getElementById('id_symbol');
-        var symbol_validation2 = document.getElementById('symbol_validation2');
-        console.log(`Running jsSymbolValidationNew()`);
-        
-        // Handles if no user entry for symbol
-        if (symbol.value.trim() === '') {
-            console.log(`Running jsSymbolValidationNew()... symbol ===' ' (symbol is empty)`);
-            symbol_validation2.innerHTML = '';
-            symbol_validation2.classList.add = 'd-none';
-            
-        // Handles if there is user entry for symbol
-        } else {
-                console.log(`Running jsSymbolValidationNew()... symbol is not empty. Symbol is: ${ symbol }`);
-                fetch('/check-symbol', {
-                method: 'POST',
-                body: new URLSearchParams({ 'user_input': symbol.value.trim() }),
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrfToken,
-                }
-            })
-            // Take the response from check_valid_symbol_new() and parse it
-            .then(response => response.json()) 
-            .then(data => {
-                // First, clear any existing contents from symbol_validation2 and make the object visible
-                symbol_validation2.innerHTML = '';
-                symbol_validation2.classList.remove = 'd-none';
-                //symbol_validation2.classList.add = 'block';
-                // Iterate over the data and append each result to symbol_validation2's innerHTML
-                data.forEach(item => {
-                    // Create a new child div for each record in the JSON object
-                    const div = document.createElement('div')
-                    // Populate that newly-created div as follows.
-                    div.innerHTML = `${item.symbol} - ${item.name} - ${item.exchange_short}<br/>`;
-                    // Add the 'result-button' class to this div
-                    div.classList.add('btn', 'btn-outline-secondary', 'custom-btn-company-search');
-                    // Set click event listener for each button
-                    div.addEventListener('click', function() {
-                        symbol.blur(); // Remove focus from the input
-                        symbol.value = item.symbol; // Populate the symbol input field with the clicked symbol
-                        jsSymbolValidation().then(() => { // Validate the newly populated symbol
-                            if (enableSubmitButtonFunction && typeof enableSubmitButtonFunction === 'function') {
-                                enableSubmitButtonFunction(); // Call the passed function to enable the submit button
-                            }
-                        });
-                    });
-                    // Append the new child div to the parent container
-                    symbol_validation2.appendChild(div);
-                });
 
-                if (data.length === 0) {
-                    // If no results, display a message
-                    symbol_validation2.innerHTML = '';
-                    symbol_validation2.classList.add = 'd-none';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                symbol_validation2.innerHTML = 'Error fetching symbol data';
-            });
-        }
-    } 
-    */   
-
-
-
-    /* POTENTIALLY REMOVE
-    // Function description: Enables and shows submit button provided the user has
-    function jsUpdateTaxRateDisplaySTCG(slider, display) {
-        var hiddenInput = document.getElementById('tax_rate_STCG_hidden');
-        var newTaxRate = parseFloat(slider.value).toFixed(2);
-        display.innerHTML = newTaxRate + '%';
-        // Update the hidden field
-        if (hiddenInput) {
-            hiddenInput.value = newTaxRate;
-        }
-    }
-
-    // Function description: Enables and shows submit button provided the user has
-    function jsUpdateTaxRateDisplayLTCG(slider, display) {
-        var hiddenInput = document.getElementById('tax_rate_LTCG_hidden');
-        var newTaxRate = parseFloat(slider.value).toFixed(2);
-        display.innerHTML = newTaxRate + '%';
-        // Update the hidden field
-        if (hiddenInput) {
-            hiddenInput.value = newTaxRate;
-        }
-    }
-    POTENTIALLY REMOVE */ 
-
-
-    // Function description: Real-time feedback re availability of username.
+    // Provides feedback re: the availability of a user-inputted username.
     function jsUsernameValidation() {
         return new Promise((resolve, reject) => {
             var username = document.getElementById('id_username').value.trim();
@@ -1228,7 +1141,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     
 
-    // Function description: Enables buy button at /buy   
+    // Enables buy button on buy page   
     function jsEnableBuySubmitButton() {
         var submitButton = document.getElementById('submit_button');
         
@@ -1249,8 +1162,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     
-    // Function description: Enables and shows submit button provided the user has
-    // updated all of the input fields and that input is.
+    // Enables submit button on password reset request page
     function jsEnablePasswordResetSubmitButton() {
         var email = document.getElementById('id_email').value.trim();
         var submitButton = document.getElementById('submit_button');
@@ -1267,8 +1179,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Function description: Enables and shows submit button provided the user has
-    // updated all of the input fields and that input is.
+
+    // Enables submit button on password reset page
     async function jsEnablePasswordRequestConfirmationSubmitButton() {
         var password = document.getElementById('id_password').value.trim();
         var password_confirmation = document.getElementById('id_password_confirmation').value.trim();
@@ -1320,8 +1232,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Function description: Enables and shows submit button provided the user has
-    // updated all of the input fields and that input is.
+
+    // Enables submit button on password change page
     async function jsEnablePasswordChangeSubmitButton() {
         var email = document.getElementById('id_email').value.trim();
         var password_old = document.getElementById('id_password_old').value.trim();
@@ -1373,8 +1285,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Function description: Enables and shows submit button provided the user has
-    // updated any of the input fields.
+
+    // Enables submit button on profile page
     async function jsEnableProfileSubmitButton() {
         var first_name = document.getElementById('id_first_name').value.trim();
         var last_name = document.getElementById('id_last_name').value.trim();
@@ -1424,7 +1336,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Function description: Enables buy button at /quote
+
+    // Enables submit button on quote page
     function jsEnableQuoteSubmitButton() {
         var submitButton = document.getElementById('submit_button');
         
@@ -1445,8 +1358,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Function description: Enables and shows submit button provided the user has
-    // updated all of the input fields and that input is.
+    // Enables submit button on register page
     async function jsEnableRegisterSubmitButton() {
         var first_name = document.getElementById('id_first_name').value.trim();
         var last_name = document.getElementById('id_last_name').value.trim();
@@ -1499,9 +1411,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // Function description: Enables buy button at /sell
+    // Enables submit button on sell page
     function jsEnableSellSubmitButton() {
-        var symbol = document.getElementById('symbol').value.trim();
+        var symbol = document.getElementById('id_symbol').value.trim();
         var submitButton = document.getElementById('submit_button');
         console.log(`running jsEnableSellSubmitButton ... sharesValidationPassed is: ${sharesValidationPassed}`);
         console.log(`running jsEnableSellSubmitButton ... symbol is: ${symbol}`);

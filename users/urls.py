@@ -5,7 +5,6 @@ from . import views
 app_name = 'users'  # Namespace for the users app
 
 urlpatterns = [
-    path('', views.index, name='index'),
     path('check_email_registered/', views.check_email_registered_view, name='check_email_registered'),
     path('check_password_strength/', views.check_password_strength_view, name='check_password_strength'),
     path('check_password_valid/', views.check_password_valid_view, name='check_password_valid'),

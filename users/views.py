@@ -8,6 +8,7 @@ from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import redirect, render
@@ -201,21 +202,6 @@ def verify_unique_token(token, user_id):
 
 #-------------------------------------------------------------------------------
 
-def index(request):
-    logger.debug('running users app, index ... view started')
-
-    # Request has "user" and "is_authenticated" built into it that tells us if the user is signed in or not.
-    if not request.user.is_authenticated:
-        logger.debug('running users app, index ... user is not authenticated')
-
-        # If user isn't signed in, we redirect them to the login view
-        return HttpResponseRedirect(reverse('users:login'))
-    
-    # Otherwise, if the user is authenticated
-    return render(request, 'users/index.html')
-    
-#--------------------------------------------------------------------------------
-
 # Returns the email if registered or otherwise, None
 # Used with jsEmailValidation()
 @require_http_methods(['POST'])
@@ -384,8 +370,11 @@ def login_view(request):
 def logout_view(request):
     logger.debug('running users app, logout_view ... view started')
 
+    user = request.user
+    cache_key = f'portfolio_{user.pk}'
+    cache.delete(cache_key)  # Clear cache for this user
+
     # logout is a function built into django.
-    # This simply logs out the currently logged-in user.
     logout(request)
 
     # Tee up the login form
@@ -683,7 +672,7 @@ def profile_view(request):
                 # Save the updated user profile and complete update process
                 logger.debug(f'running users app, profile_view ... successfully pulled in all data from RegistrationForm')
                 messages.success(request, 'You have successfully updated your profile.')
-                return redirect('users:index')
+                return redirect('brokerage:index')
 
             # If pulling in data from the form fails, flash error message and return to register
             except Exception as e:

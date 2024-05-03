@@ -157,7 +157,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = 'Asia/Jakarta'
 
 USE_I18N = True
 
@@ -181,8 +181,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # CSP Settings
 CSP_DEFAULTS = {
 "default-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://www.googletagmanager.com", "https://www.google-analytics.com"],
-    "script-src": ["'self'", "https://127.0.0.1:8000", 'https://ajax.googleapis.com', "https://cdn.jsdelivr.net", "https://code.jquery.com/", "https://www.googletagmanager.com", "https://www.google-analytics.com", "https://substackapi.com", "{nonce}"],
-    "style-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+    "script-src": ["'self'", "https://127.0.0.1:8000", 'https://ajax.googleapis.com', "https://cdn.jsdelivr.net", "https://code.jquery.com/", "https://www.googletagmanager.com", "https://www.google-analytics.com", "https://cdn.jsdelivr.net", "https://substackapi.com", "{nonce}"],
+    "style-src": ["'self'", "https://127.0.0.1:8000", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://stackpath.bootstrapcdn.com"],
     "img-src": ["'self'", "data:", "https://127.0.0.1:8000", "https://financialmodelingprep.com/", "https://images.unsplash.com", "https://substackcdn.com"],
     "frame-src": ["'self'", "https://www.youtube.com"],
     "connect-src": ["'self'", "https://substackapi.com", "https://www.google-analytics.com"],
@@ -209,7 +209,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '{levelname} {asctime} {module} {pathname}:{lineno} {message}',
             'style': '{',
         },
     },
@@ -285,3 +285,12 @@ TEMPLATES = [
         },
     },
 ]
+
+
+# Added to manage how long the portfolio object is kept before being refreshed.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}

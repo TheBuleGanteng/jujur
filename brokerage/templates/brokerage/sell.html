@@ -1,0 +1,117 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Sell Stocks
+{% endblock %}
+
+{% block main %}
+
+    <div class='container-fluid pt-2 pb-5'>
+
+        <!-- boostrap5 loading spinner -->
+        <div id='loadingSpinner' class='d-flex align-items-center justify-content-center'>
+            <div>
+            <strong>Loading...</strong>
+            <div class='spinner-border ms-auto' role='status' aria-hidden='true'></div>
+            </div>
+        </div>
+        <!-- /boostrap5 loading spinner -->
+
+        <!-- instructional text -->
+        <div class="container-fluid ps-0 mb-1">
+            <div class="container-fluid container-instructions-start-bold">
+                Please enter a stock symbol and number of shares.
+            </div>
+            <div class="container-fluid container-instructions-start">
+            </div>
+        </div>
+        <!-- /instructional text -->
+
+        
+        <div class='row'>
+            <div class='col-md-8'> 
+                <form id='SellForm' action='{% url "brokerage:sell" %}' method='post'>
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+
+                    <!-- transaction_type (hidden) -->
+                    {{ form.transaction_type }}
+                    <!-- /transaction_type (hidden) -->
+                    
+                    <table class="table">
+                        <tbody>
+                            <!-- Symbol Row -->
+                            <tr>
+                                <td>
+                                    <label for='id_symbol' class='form-label-start-req-bold'>Symbol:</label>
+                                </td>
+                                <td>
+                                    {{ form.symbol }}
+                                    {% if form.symbol.errors %}
+                                        <div class='text-danger'>
+                                            {% for error in form.symbol.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                
+                            <!-- Shares Row -->
+                            <tr>
+                                <td>
+                                    <label for='id_shares' class='form-label-start-req-bold'>Shares:</label>
+                                </td>
+                                <td>
+                                    {{ form.shares }}
+                                    {% if form.shares.errors %}
+                                        <div class='text-danger'>
+                                            {% for error in form.shares.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <!-- Shares Validation Placeholder -->
+                                    <div class='container-input-validation mt-1 d-none' id='shares_validation' name='shares_validation'>
+                                        <a></a>
+                                    </div>
+                                </td>
+                            </tr>
+                
+                            <!-- Submit and Cancel Buttons Row -->
+                            <tr>
+                                <td>
+                                </td> <!-- Empty cell for alignment -->
+                                <td>
+                                    <button type='submit' class='btn btn-success w-100 mt-1 mb-1' id='submit_button'>Sell shares</button>
+                                    <a href='{% url "brokerage:index" %}' class='btn btn-secondary w-100 mt-1 mb-1'>Back</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </form>
+
+        <!-- sell confirmation modal -->
+        <div class="modal fade" id="confirmSellModal" tabindex="-1" aria-labelledby="confirmSellModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                <h5 class="modal-title" id="confirmSellModalLabel">Confirm Sale</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                Are you sure you want to sell these shares?
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmSellButton">Confirm</button>
+                </div>
+            </div>
+            </div>
+        </div>
+        <!-- /sell confirmation modal -->
+    
+    </div>
+
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends 'layout.html' %}
+{% load brokerage_filters %}
+
+
+{% block title %}
+    Transaction History
+{% endblock %}
+
+{% block main %}
+
+    <div class='container-fluid pt-2 pb-5'>
+
+        <!-- boostrap5 loading spinner -->
+        <div id='loadingSpinner' class='d-flex align-items-center justify-content-center'>
+            <div>
+            <strong>Loading...</strong>
+            <div class='spinner-border ms-auto' role='status' aria-hidden='true'></div>
+            </div>
+        </div>
+        <!-- /boostrap5 loading spinner -->
+
+        <h2>Transaction History</h2>                   
+
+        <div class="table-responsive-lg">
+            <table class="table table-hover">
+                <thead class='sticky-top'>
+                    <tr>
+                        <!-- Below are the headers for the table that shows stock info -->
+                        <th>Date</th>
+                        <th>Txn. ID</th>
+                        <th>Symbol</th>
+                        <th>Txn. Type</th>
+                        <th>Shrs.</th>
+                        <th>Txn. value per shr.</th>
+                        <th>Total txn. value</th>
+                        <th>STCG, pre-tax</th>
+                        <th>LTCG, pre-tax</th>
+                        <th>Total cap. gains, pre-tax</th>
+                        <th>Total cap. gains, pre-tax (%)</th>
+                        <th>STCG tax</th>
+                        <th>LTCG tax</th>
+                        <th>Total cap. gains tax (offset)</th>
+                        <th>STCG, post-tax</th>
+                        <th>LTCG, post-tax</th>
+                        <th>Total cap. gains, post-tax</th>
+                        <th>Total cap. gains, post-tax (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Below are the values that have been passed in from app.py in the /quote function -->
+                    {% for transaction in history %}
+                        <tr>
+                            <td>{{ transaction.timestamp | date:'Y-m-d, H:i:s' }}</td>
+                            <td>{{ transaction.transaction_id }}</td>
+                            <td><a href="/quote?symbol={{ transaction.symbol }}">{{ transaction.symbol }}</a></td>
+                            <td>{{ transaction.type }}</td>
+                            <td>{{ transaction.transaction_shares }}</td>
+                            <td>{{ transaction.transaction_value_per_share | filter_usd }}</td>
+                            <td>{{ transaction.transaction_value_total | filter_usd }}</td>
+                            {% if transaction.type == 'BOT' %}
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            {% else %}
+                            <td>{{ transaction.STCG | filter_usd }}</td>
+                            <td>{{ transaction.LTCG | filter_usd }}</td>
+                            <td>{{ transaction.total_CG_pre_tax | filter_usd }}</td>
+                            <td>{{ transaction.total_CG_pre_tax_percent | filter_percentage }}</td>
+                            <td>{{ transaction.STCG_tax | filter_usd }}</td>
+                            <td>{{ transaction.LTCG_tax | filter_usd }}</td>
+                            <td>{{ transaction.total_CG_tax | filter_usd }}</td>
+                            <td>{{ transaction.STCG_post_tax | filter_usd }}</td>
+                            <td>{{ transaction.LTCG_post_tax | filter_usd }}</td>
+                            <td>{{ transaction.total_CG_post_tax | filter_usd }}</td>
+                            <td>{{ transaction.total_CG_post_tax_percent | filter_percentage }}</td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+{% endblock %}
+

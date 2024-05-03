@@ -1,5 +1,4 @@
-from datetime import timedelta
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.utils import timezone
 import logging
 from ..models import Listing, Transaction
@@ -76,174 +75,201 @@ class Portfolio:
     def get_symbol_data(self, symbol):
         return self.portfolio_data.get(symbol, None)
 
+#----------------------------------------------------------------------------------------
 
 # Creates an item of the portfolio class and populates it
 def process_user_transactions(user):
-    logger.debug(f'running /process_user_transactions(user) ...  for user { user.id } ...  function started')
+    logger.debug(f'running process_user_transactions() ...  for user { user.id } ...  function started')
+    
+    # Initialize tax rates and whether cap loss offset is turned on
+    tax_rate_STCG = Decimal(user.userprofile.tax_rate_STCG / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    tax_rate_LTCG = Decimal(user.userprofile.tax_rate_LTCG / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    tax_offset_coefficient = 1 if user.userprofile.tax_loss_offsets == 'On' else 0
+    cutoff_date = timezone.now() - timezone.timedelta(days=365)
     
     # Create an instance of the Portfolio class
     portfolio = Portfolio()
-    logger.debug(f'running /process_user_transactions(user) ...  for user { user.id } ...  object created')
-
-    # Initialize tax rates and whether cap loss offset is turned on
-    tax_rate_STCG = user.userprofile.tax_rate_STCG / 100
-    tax_rate_LTCG = user.userprofile.tax_rate_LTCG / 100
-    tax_offset_coefficient = 1 if user.userprofile.tax_loss_offsets == 'On' else 0
-    cutoff_date = timezone.now() - timedelta(days=365)
-
+    logger.debug(f'running process_user_transactions() ...  for user { user.id } ...  object created')
+    
     # Query transactions DB to see if user has transactions
     transactions = Transaction.objects.filter(user=user).all()
     
     # If user doesn't have transactions (e.g. a new user, return an empty portfolio object)
     if not transactions:
+        logger.debug(f'running process_user_transactions() ... for user {user.id} ... no transactions in portfolio, returning empty portfolio object ')
         return portfolio
     
-    # Loop for each transaction record in user_data
+    # If user has transactions, but no open positions (e.g. everything is closed out), return an empty portfolio object
+    total_shares_held = 0
     for transaction in transactions:
+        if transaction.type =='BOT':
+            total_shares_held += transaction.transaction_shares
+        else:
+            total_shares_held -= transaction.transaction_shares
+    if not total_shares_held > 0:
+        logger.debug(f'running process_user_transactions() ... for user {user.id} ... user has transactions, but all positions are closed.')
+        return portfolio
 
-        # All the metrics below this indent pertain to open positions.         
+
+    # Collect all unique symbols
+    unique_symbols = set(transaction.symbol for transaction in transactions)
+    print(f'running process_portfolio.py ... unique_symbols is: {unique_symbols}')
+    unique_symbols_string = ','.join(unique_symbols)
+    print(f'running process_portfolio.py ... unique_symbols_string is: {unique_symbols_string}')
+    unique_symbols_data = company_data_multiple(unique_symbols_string)
+    print(f'running process_portfolio.py ... unique_symbols_data is: {unique_symbols_data}')
+
+    # Initialize portfolio data for each symbol
+    for symbol in unique_symbols:
+        if symbol not in portfolio.portfolio_data:
+            symbol_info = unique_symbols_data.get(symbol, {})
+            market_value_per_share = Decimal(str(symbol_info.get('price', '0')))
+            portfolio.add_symbol(symbol, {
+                'symbol': symbol,
+                'transaction_shares': Decimal('0'),
+                'shares_outstanding': Decimal('0'),
+                'cost_basis_per_share' : Decimal('0'),
+                'cost_basis_total' : Decimal('0'),
+                'market_value_per_share': market_value_per_share,
+                'market_value_total_pre_tax': Decimal('0'),
+                'gain_or_loss_pre_tax_percent': Decimal('0'),
+                'STCG_unrealized': Decimal('0'),
+                'LTCG_unrealized': Decimal('0'),
+                'CG_total_unrealized': Decimal('0'),
+                'STCG_tax_unrealized': Decimal('0'),
+                'LTCG_tax_unrealized': Decimal('0'),
+                'CG_tax_offset_unrealized': Decimal('0'),
+                'CG_total_tax_unrealized': Decimal('0'),
+                'CG_total_post_tax': Decimal('0'),
+                'market_value_post_tax': Decimal('0'),
+                'return_percent_post_tax': Decimal('0'),
+            })
+
+
+        # ----------------------------------------------------------------------
+    
+    
+    for transaction in transactions:
+        symbol_data = portfolio.get_symbol_data(transaction.symbol)
+
+        # If the current transaction = BOT... 
         if transaction.type == 'BOT':  
+    
+            # If the current transaction = BOT && shares outstanding > 0 ...
+            if transaction.shares_outstanding > 0:
 
-            # Establish symbol as the point on which rows will be consolidated
-            symbol = transaction.symbol
+                # Cost basis and unrealized cap gains on the current transaction
+                open_transaction_cost_basis_total = transaction.shares_outstanding * transaction.transaction_value_per_share
+                open_transaction_gain_or_loss_unrealized = (transaction.shares_outstanding * symbol_data['market_value_per_share']) - open_transaction_cost_basis_total
+
+                # If short-term, then...
+                if transaction.timestamp > cutoff_date:
+                    open_transaction_STCG_unrealized = open_transaction_gain_or_loss_unrealized
+                    open_transaction_LTCG_unrealized = 0
+                    # If a ST gain, then...
+                    if open_transaction_STCG_unrealized > 0:
+                        open_transaction_STCG_tax_unrealized = open_transaction_STCG_unrealized *  tax_rate_STCG
+                        open_transaction_LTCG_tax_unrealized = 0
+                        open_transaction_CG_tax_offset_unrealized = 0
+                    # If a ST loss, then...
+                    else:
+                        open_transaction_STCG_tax_unrealized = 0
+                        open_transaction_LTCG_tax_unrealized = 0
+                        open_transaction_CG_tax_offset_unrealized = abs(open_transaction_STCG_unrealized *  tax_rate_STCG * tax_offset_coefficient)
+                # If LT, then...
+                else:
+                    open_transaction_STCG_unrealized = 0
+                    open_transaction_LTCG_unrealized = open_transaction_gain_or_loss_unrealized
+                    # If a LT gain, then...
+                    if open_transaction_LTCG_unrealized > 0:
+                        open_transaction_STCG_tax_unrealized = 0
+                        open_transaction_LTCG_tax_unrealized = open_transaction_LTCG_unrealized *  tax_rate_LTCG
+                        open_transaction_CG_tax_offset_unrealized = 0
+                    # If a LT loss, then...
+                    else:
+                        open_transaction_STCG_tax_unrealized = 0
+                        open_transaction_LTCG_tax_unrealized = 0
+                        open_transaction_CG_tax_offset_unrealized = abs(open_transaction_LTCG_unrealized *  tax_rate_LTCG * tax_offset_coefficient)
+                
+                open_transaction_CG_total_unrealized = open_transaction_STCG_unrealized + open_transaction_LTCG_unrealized  
+                open_transaction_CG_total_tax_unrealized = open_transaction_STCG_tax_unrealized + open_transaction_LTCG_tax_unrealized  
+                open_transaction_market_value_total_pre_tax =  transaction.shares_outstanding * symbol_data['market_value_per_share']
+                open_transaction_gain_or_loss_pre_tax_percent_unrealized = open_transaction_market_value_total_pre_tax / open_transaction_cost_basis_total
+
+                open_transaction_CG_total_post_tax_unrealized = open_transaction_CG_total_unrealized - open_transaction_CG_total_tax_unrealized
+                open_transaction_market_value_post_tax = open_transaction_market_value_total_pre_tax - open_transaction_CG_total_tax_unrealized  
+                open_transaction_return_percent_post_tax = (open_transaction_market_value_post_tax / open_transaction_cost_basis_total) - 1 
             
-            # If a symbol is new to the portfolio, initialize it to the portfolio
-            if symbol not in portfolio.portfolio_data:
-                
-                # When a new symbol is encountered, set up a new row with the following columns
-                portfolio.add_symbol(symbol, {
-                    'symbol': symbol,
-                    'transaction_shares': Decimal('0'),
-                    'shares_outstanding': Decimal('0'),
-                    'cost_basis_per_share' : Decimal('0'),
-                    'cost_basis_total' : Decimal('0'),
-                    'market_value_per_share': Decimal(str(company_data(symbol)['price'])),
-                    'market_value_total_pre_tax': Decimal('0'),
-                    'gain_or_loss_pre_tax_percent': Decimal('0'),
-                    'STCG_unrealized': Decimal('0'),
-                    'LTCG_unrealized': Decimal('0'),
-                    'CG_total_unrealized': Decimal('0'),
-                    'STCG_tax_unrealized': Decimal('0'),
-                    'LTCG_tax_unrealized': Decimal('0'),
-                    'CG_tax_offset_unrealized': Decimal('0'),
-                    'CG_total_tax_unrealized': Decimal('0'),
-                    'CG_total_post_tax': Decimal('0'),
-                    'market_value_post_tax': Decimal('0'),
-                    'return_percent_post_tax': Decimal('0'),
-                })
-
-            # Attach the new data fields listed above to portfolio.symbol
-            symbol_data = portfolio.get_symbol_data(symbol)
-
-            # Transaction-level metrics: not shown on index b/b it is rolled up into 
-            # symbol-level data
-            transaction_cost_basis_total = transaction.shares_outstanding * transaction.transaction_value_per_share
-            transaction_gain_or_loss = (transaction.shares_outstanding * symbol_data['market_value_per_share']) - transaction_cost_basis_total
-
-            # If ST, then...
-            if transaction.timestamp > cutoff_date:
-                transaction_STCG_unrealized = transaction_gain_or_loss
-                transaction_LTCG_unrealized = 0
-                # If a ST gain, then...
-                if transaction_STCG_unrealized > 0:
-                    transaction_STCG_tax_unrealized = transaction_STCG_unrealized *  tax_rate_STCG
-                    transaction_LTCG_tax_unrealized = 0
-                    transaction_CG_tax_offset_unrealized = 0
-                # If a ST loss, then...
-                else:
-                    transaction_STCG_tax_unrealized = 0
-                    transaction_LTCG_tax_unrealized = 0
-                    transaction_CG_tax_offset_unrealized = abs(transaction_STCG_unrealized *  tax_rate_STCG * tax_offset_coefficient)
-            # If LT, then...
+            # If the current transaction = BOT && shares outstanding == 0 ...
             else:
-                transaction_STCG_unrealized = 0
-                transaction_LTCG_unrealized = transaction_gain_or_loss
-                # If a LT gain, then...
-                if transaction_LTCG_unrealized > 0:
-                    transaction_STCG_tax_unrealized = 0
-                    transaction_LTCG_tax_unrealized = transaction_LTCG_unrealized *  tax_rate_LTCG
-                    transaction_CG_tax_offset_unrealized = 0
-                # If a LT loss, then...
-                else:
-                    transaction_STCG_tax_unrealized = 0
-                    transaction_LTCG_tax_unrealized = 0
-                    transaction_CG_tax_offset_unrealized = abs(transaction_LTCG_unrealized *  tax_rate_LTCG * tax_offset_coefficient)
-                
-            transaction_CG_total_unrealized = transaction_STCG_unrealized + transaction_LTCG_unrealized  
-            transaction_CG_total_tax_unrealized = transaction_STCG_tax_unrealized + transaction_LTCG_tax_unrealized  
-            transaction_market_value_total_pre_tax =  transaction.shares_outstanding * symbol_data['market_value_per_share']
-            transaction_gain_or_loss_pre_tax_percent = transaction_market_value_total_pre_tax / transaction_cost_basis_total
+                open_transaction_cost_basis_total = 0
+                open_transaction_STCG_unrealized = 0
+                open_transaction_LTCG_unrealized = 0
+                open_transaction_CG_total_unrealized = 0
+                open_transaction_market_value_total_pre_tax = 0
+                open_transaction_STCG_tax_unrealized = 0
+                open_transaction_LTCG_tax_unrealized = 0
+                open_transaction_CG_total_tax_unrealized = 0
+                open_transaction_CG_tax_offset_unrealized = 0
+                open_transaction_market_value_post_tax = 0
 
-            transaction_CG_total_post_tax = transaction_CG_total_unrealized - transaction_CG_total_tax_unrealized
-            transaction_market_value_post_tax = transaction_market_value_total_pre_tax - transaction_CG_total_tax_unrealized  
-            transaction_return_percent_post_tax = (transaction_market_value_post_tax / transaction_cost_basis_total) - 1 
-
-            # Symbol-level metrics: This is symbol-level data shown on index
+            # Increment data consolidated on symbol --------------------------------------
+            
+            # Symbol-level metrics: This is symbol-level data
             symbol_data['transaction_shares'] += transaction.transaction_shares
             symbol_data['shares_outstanding'] += transaction.shares_outstanding
-            symbol_data['cost_basis_total'] += transaction_cost_basis_total
-            symbol_data['cost_basis_per_share'] = symbol_data['cost_basis_total'] / symbol_data['shares_outstanding']  
-
-            symbol_data['STCG_unrealized'] += transaction_STCG_unrealized
-            symbol_data['LTCG_unrealized'] += transaction_LTCG_unrealized
-            symbol_data['CG_total_unrealized'] += transaction_CG_total_unrealized        
-
-            symbol_data['market_value_total_pre_tax'] += transaction_market_value_total_pre_tax
-            symbol_data['gain_or_loss_pre_tax_percent'] = symbol_data['CG_total_unrealized'] / symbol_data['cost_basis_total']  
+            symbol_data['cost_basis_total'] += open_transaction_cost_basis_total
             
-            symbol_data['STCG_tax_unrealized'] += transaction_STCG_tax_unrealized
-            symbol_data['LTCG_tax_unrealized'] += transaction_LTCG_tax_unrealized    
-            symbol_data['CG_total_tax_unrealized'] += transaction_CG_total_tax_unrealized
-            symbol_data['CG_tax_offset_unrealized'] += transaction_CG_tax_offset_unrealized
-            
-            symbol_data['market_value_post_tax'] += transaction_market_value_post_tax
-            symbol_data['return_percent_post_tax'] = (symbol_data['market_value_post_tax']/symbol_data['cost_basis_total']) - 1 
+            symbol_data['STCG_unrealized'] += open_transaction_STCG_unrealized
+            symbol_data['LTCG_unrealized'] += open_transaction_LTCG_unrealized
+            symbol_data['CG_total_unrealized'] += open_transaction_CG_total_unrealized        
 
-        # All the metrics below this indent pertain to open positions. 
-        # See 'else' for metrics pertaining to closed trades.        
+            symbol_data['market_value_total_pre_tax'] += open_transaction_market_value_total_pre_tax
+            symbol_data['STCG_tax_unrealized'] += open_transaction_STCG_tax_unrealized
+            symbol_data['LTCG_tax_unrealized'] += open_transaction_LTCG_tax_unrealized    
+            symbol_data['CG_total_tax_unrealized'] += open_transaction_CG_total_tax_unrealized
+            symbol_data['CG_tax_offset_unrealized'] += open_transaction_CG_tax_offset_unrealized
+            
+            symbol_data['market_value_post_tax'] += open_transaction_market_value_post_tax
+            
+            if symbol_data['shares_outstanding'] > 0:
+                symbol_data['cost_basis_per_share'] = symbol_data['cost_basis_total'] / symbol_data['shares_outstanding']
+                symbol_data['gain_or_loss_pre_tax_percent'] = symbol_data['CG_total_unrealized'] / symbol_data['cost_basis_total'] 
+                symbol_data['return_percent_post_tax'] = (symbol_data['market_value_post_tax']/symbol_data['cost_basis_total']) - 1 
+
+        
+        #-------------------------------------------------------------------------
+        
+
+        # For share SALES        
         else:
-            portfolio.sld_transaction_shares_total += transaction.transaction_shares
             
-            transaction.cost_basis_total = transaction.transaction_value_total - transaction.STCG - transaction.LTCG
-            
-            portfolio.sld_transaction_cost_basis_total += transaction.cost_basis_total 
-
-            portfolio.sld_transaction_STCG_total += transaction.STCG
-            
-            portfolio.sld_transaction_LTCG_total += transaction.LTCG
-            
+            # If SLD, add the following txn metrics...
             transaction.CG_total_realized = transaction.STCG + transaction.LTCG
-            
-            portfolio.sld_transaction_CG_total_realized_total += transaction.CG_total_realized  
-            
-            #transaction.cost_basis_per_share = transaction.cost_basis_total / transaction.transaction_shares 
-            
+            transaction.cost_basis_total = transaction.transaction_value_total - transaction.STCG - transaction.LTCG
+            transaction.gain_or_loss_pre_tax_percent = transaction.CG_total_realized / transaction.cost_basis_total
+            transaction.STCG_tax_realized = max(transaction.STCG_tax, 0)
+            transaction.LTCG_tax_realized = max(transaction.LTCG_tax, 0)
+            transaction.CG_total_tax_realized = max(transaction.STCG * tax_rate_STCG + transaction.LTCG * tax_rate_LTCG, 0)
+            transaction.CG_tax_offset_unrealized = max(-(transaction.STCG_tax + transaction.LTCG_tax), 0)
+            transaction.market_value_post_tax = transaction.transaction_value_total - transaction.CG_total_tax_realized
+            transaction.return_percent_post_tax = (transaction.market_value_post_tax / transaction.cost_basis_total) - 1
+
+
+            # If SLD, add the following txn metrics...
+            portfolio.sld_transaction_shares_total += transaction.transaction_shares
+            portfolio.sld_transaction_cost_basis_total += transaction.cost_basis_total 
+            portfolio.sld_transaction_STCG_total += transaction.STCG
+            portfolio.sld_transaction_LTCG_total += transaction.LTCG            
+            portfolio.sld_transaction_CG_total_realized_total += transaction.CG_total_realized      
             portfolio.sld_transaction_market_value_pre_tax_total += transaction.transaction_value_total
             
             # See below for cals. pertaining to: portfolio.sld_transaction_gain_or_loss_pre_tax_percent
-
-            transaction.gain_or_loss_pre_tax_percent = transaction.CG_total_realized / transaction.cost_basis_total
-            
-            transaction.STCG_tax_realized = max(transaction.STCG_tax, 0)
-            
             portfolio.sld_transaction_STCG_tax_total += transaction.STCG_tax_realized 
-            
-            transaction.LTCG_tax_realized = max(transaction.LTCG_tax, 0)
-            
             portfolio.sld_transaction_LTCG_tax_total += transaction.LTCG_tax_realized
-            
-            transaction.CG_total_tax_realized = max(transaction.STCG * tax_rate_STCG + transaction.LTCG * tax_rate_LTCG, 0)
-            
-            transaction.CG_tax_offset_unrealized = max(-(transaction.STCG_tax + transaction.LTCG_tax), 0)
-            
             portfolio.sld_transaction_tax_offset_total += transaction.CG_tax_offset_unrealized
-            
-            transaction.market_value_post_tax = transaction.transaction_value_total - transaction.CG_total_tax_realized
-            
             portfolio.sld_transaction_market_value_post_tax_total += transaction.market_value_post_tax 
 
-            transaction.return_percent_post_tax = (transaction.market_value_post_tax / transaction.cost_basis_total) - 1
-            
             portfolio.sell_transactions.append(transaction) 
             
     # PORTFOLIO-LEVEL METRICS: This is total portfolio data shown at bottom of index tables    

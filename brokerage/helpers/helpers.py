@@ -1,10 +1,11 @@
-from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Case, Q, F, Func, Value, When
+from django.db.models import Case, Q, F, Func, Sum, Value, When
 from django.db.models.functions import Length
+from django.utils import timezone
+import locale
 import logging
 from ..models import Listing, Transaction
 import os
@@ -12,7 +13,7 @@ import requests
 from users.models import UserProfile
 logger = logging.getLogger('django')
 
-__all__ = ['check_valid_shares', 'check_valid_symbol', 'company_data', 'fmp_key', 'process_buy', 'update_listings', 'reformat_usd']
+__all__ = ['check_valid_shares', 'check_valid_symbol', 'company_data', 'company_data_multiple', 'fmp_key', 'process_buy', 'process_sell', 'update_listings', 'reformat_number', 'reformat_number_two_decimals', 'reformat_usd']
 
 
 # Pull company data via FMP API
@@ -37,9 +38,71 @@ def company_data(symbol):
         return None
 
 
+def company_data_multiple(symbols):
+    logger.debug(f'running get_stock_info(): ... symbols is: { symbols }')
+        
+    try:
+        limit = 1
+        response = requests.get(f'https://financialmodelingprep.com/api/v3/quote/{symbols}?apikey={fmp_key}')       
+        #increment_ping()
+        logger.debug(f'running company_data_multiple(): ... response is: { response }')
+        data = response.json()
+        # Convert list of dictionaries to a dictionary indexed by symbol
+        symbol_data_dict = {item['symbol']: item for item in data}
+        return symbol_data_dict
+    
+    except requests.RequestException as e:
+        logger.error(f"Failed to fetch data for symbols {symbols_string}: {str(e)}")
+        return {}
+        
+    except Exception as e:
+        logger.debug(f'running company_data(symbol): ... function tried symbol: { symbol } but errored with error: { e }')
+        return None
+
+
 # Defines key for FMP api
 fmp_key = os.getenv('FMP_API_KEY')
 
+# Reformat argument as comma-separated number
+def reformat_number_format(value):
+    if value is None:
+        return ""
+    # Format number
+    try:
+        # Convert to integer for formatting
+        value = int(value)
+        # Use django's Decimal to format the number according to the current locale
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+        return locale.format_string("%n", value, grouping=True)
+    except (ValueError, TypeError, locale.Error) as e:
+        return str(value)
+
+
+# Reformat argument as comma-separated number 
+def reformat_number(value):
+    if value is None:
+        return ""
+     # Format number
+    try:
+        # Convert the value to a Decimal for precision and consistent formatting
+        decimal_value = Decimal(value)
+        # Format the number with commas for thousands separators and two decimal places
+        return "{:,.0f}".format(decimal_value)
+    except (ValueError, TypeError, decimal.InvalidOperation) as e:
+        return str(value)
+
+# Reformat argument as comma-separated number 
+def reformat_number_two_decimals(value):
+    if value is None:
+        return ""
+    # Format number
+    try:
+        # Convert the value to a Decimal for precision and consistent formatting
+        decimal_value = Decimal(value)
+        # Format the number with commas for thousands separators and two decimal places
+        return "{:,.2f}".format(decimal_value)
+    except (ValueError, TypeError, decimal.InvalidOperation) as e:
+        return str(value)
 
 # Reformat argument as usd
 def reformat_usd(value):
@@ -69,7 +132,7 @@ def check_valid_shares(shares, symbol, transaction_type, user):
             return response
     
         # Step 2: Pull user object for signed-in user from DB
-        user_cash = user.userprofile.cash
+        user_cash = Decimal(user.userprofile.cash)
         user_cash_reformatted = reformat_usd(user_cash)
         logger.debug(f'running brokerage app, check_valid_shares ... pulled user object: { user }')
 
@@ -110,12 +173,12 @@ def check_valid_shares(shares, symbol, transaction_type, user):
             # Step 6.2: User trying to sell more shares than owned. Sale fails.
             if shares > total_shares_owned: 
                 logger.error(f'running brokerage app, check_valid_shares ... user: {user} entered more shares than owned: { total_shares_owned}. Test failed')
-                result['message'] = f'User cannot sell { shares } shares, as it exceeds the current total of { total_shares_owned } shares.'
+                response['message'] = f'User cannot sell { shares } shares, as it exceeds the current total of { total_shares_owned } shares.'
 
             # Step 6.3: Seller has sufficient shares to sell. Sale proceeds.
             else:
-                result['success'] = True, 
-                result['message'] = f'User able to sell { shares } shares from current total of { total_shares_owned } shares.' 
+                response['success'] = True, 
+                response['message'] = f'User able to sell { shares } shares from current total of { total_shares_owned } shares.' 
                 response['data'] = {
                     'transaction_value_per_share': transaction_value_per_share,  
                     'transaction_value_total': transaction_value_total  
@@ -157,6 +220,7 @@ def check_valid_symbol(symbol):
                 )
             ).order_by('relevance', Length('symbol'), Length('name'))[:5]
 
+        
         data = [{
             'symbol': listing.symbol, 
             'name': listing.name, 
@@ -165,12 +229,16 @@ def check_valid_symbol(symbol):
             for listing in listings
         ]
         print(f'running check_valid_symbol ... data: { data }')
-        return {'success': True, 'data': data}
+        
+        if data:
+            return {'success': True, 'data': data}
+        else:
+            return {'success': False, 'message': 'Error: invalid symbol. Please enter a valid symbol and try again.'}
 
     except Exception as e:
         # Log error to console or file
         logger.debug(f'running brokerage app, check_valid_symbol() ... no results found, returned error: {str(e)}')
-        return {'success': False, 'error': str(e)}
+        return {'success': False, 'message': f'Error: { e }'}
 
 
 # Process the purchase of shares
@@ -203,12 +271,97 @@ def process_buy(symbol, shares, user, check_valid_shares_result):
         
         # Update the user's cash balance
         user.userprofile.cash -= transaction_value_total
-        user.userprofile.save()  # Don't forget to save the updated profile
+        user.userprofile.save()
         logger.debug(f'running brokerage app, process_purchase() ... user.userprofile.cash updated to: { user.userprofile.cash }')
     
     return new_transaction
 
+
+# Processes share sale
+def process_sell(symbol, shares, user):
+    print(f'running process_sell() ... user is { user }, function started')
+
+    # Ensure 'shares' is an integer
+    try:
+        shares = int(shares)
+        shares_to_fill = shares
+    except ValueError:
+        print("Invalid shares input")
+        return
+
+    # Initialize shares_to_fill variable
+    user_profile = user.userprofile
+    cutoff_date = timezone.now() - timezone.timedelta(days=365)
+    market_price_per_share = Decimal(company_data(symbol)['price']).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    tax_offset_coefficient = 1 if user_profile.tax_loss_offsets == 'On' else 0
+    tax_rate_STCG = Decimal(user_profile.tax_rate_STCG / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    tax_rate_LTCG = Decimal(user_profile.tax_rate_LTCG / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    transactions = Transaction.objects.filter(user=user, symbol=symbol, type='BOT').order_by(
+        '-timestamp' if user_profile.accounting_method == 'LIFO' else 'timestamp'
+    )        
+    print(f'running process_sell() ... user is { user }, shares is: { shares }')
+    print(f'running process_sell() ... user is { user }, market_price_per_share is: { market_price_per_share }')
+    print(f'running process_sell() ... user is { user }, cutoff_date is: { cutoff_date }')
+    print(f'running process_sell() ... user is { user }, tax_offset_coefficient is: { tax_offset_coefficient }')
+
+    # Initialize capital gains variables that will be incremented later
+    STCG = Decimal('0.00')
+    STCG_tax = Decimal('0.00')
+    LTCG = Decimal('0.00')
+    LTCG_tax = Decimal('0.00')
+
     
+    # Start a database transaction
+    with transaction.atomic(): # Ensures all changes or none is entered to DB
+        # Loop through each of the user's BOT transactions
+        for txn in transactions:    
+            # If txn has enough shares, fill the order
+            if txn.shares_outstanding > shares_to_fill:
+                txn.shares_outstanding -= shares_to_fill 
+                gain = (shares_to_fill * market_price_per_share) - (shares_to_fill * txn.transaction_value_per_share)
+                if txn.timestamp > cutoff_date:
+                    STCG += gain
+                    STCG_tax += gain * tax_rate_STCG  
+                else:
+                    LTCG += gain
+                    LTCG_tax += gain * tax_rate_LTCG
+                shares_to_fill = 0
+                txn.save()
+                print(f'running process_sell() ... user is { user }, sell order filled with transaction: { transaction }')
+                break
+            else:
+                # If the first BOT transaction wasn't big enough to fill sell order, then decrement shares_to_fill
+                shares_to_fill -= txn.shares_outstanding
+                txn.shares_outstanding = 0
+                txn.save()
+
+        # In case there are not enough shares to sell (unlikely due to prior back-end validation)
+        if shares_to_fill > 0:
+            raise Exception('Not enough shares to sell.')
+
+        # Que up the new transaction to be added to the transactions table (shares_outstanding is omitted because this is a sale)
+        new_transaction = Transaction(
+                        user = user,
+                        type = 'SLD',
+                        symbol = symbol,
+                        transaction_shares = shares,
+                        transaction_value_per_share = market_price_per_share, 
+                        transaction_value_total= (shares * market_price_per_share).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+                        STCG = STCG,
+                        LTCG = LTCG,
+                        STCG_tax = STCG_tax,
+                        LTCG_tax = LTCG_tax
+                    )
+        new_transaction.save()
+        print(f'running process_sell() ... user is { user }, new_transaction is: { new_transaction } ')
+
+        # Adjust cash and commit changes to DB
+        print(f'running process_sell() ... user is { user }, user_profile.cash before deducting transaction_value_total is: { user_profile.cash } ')        
+        user_profile.cash += new_transaction.transaction_value_total
+        user_profile.save()
+        print(f'running process_sell() ... user is { user }, user_profile.cash after deducting transaction_value_total is: { user_profile.cash } ')        
+    
+        
 
 # Update the listings table in the DB
 def update_listings():

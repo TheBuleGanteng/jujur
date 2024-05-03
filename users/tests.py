@@ -13,12 +13,11 @@ from .models import UserProfile
 import re
 from unittest.mock import patch
 from users import urls as users_urls
-print(f'Users URL patterns: {users_urls.urlpatterns}')
 
 
 User = get_user_model()
 logger = logging.getLogger('django')
-
+logger.debug(f'running users.tests.py ... users URL patterns: {users_urls.urlpatterns}')
 
 # Define global variables here:
 password_correct = 'abc123'
@@ -65,10 +64,10 @@ class MyModelTests(TestCase):
             confirmed=True,
         )
         # Print statements for confirmed user
-        print(f'running users/tests.py, setup ... user_confirmed created: {self.user_confirmed.username}, Email: {self.user_confirmed.email}, Active: {self.user_confirmed.is_active}') 
+        logger.debug(f'running users/tests.py, setup ... user_confirmed created: {self.user_confirmed.username}, Email: {self.user_confirmed.email}, Active: {self.user_confirmed.is_active}') 
         # Test authenticating confirmed user
         authenticated_user = authenticate(username=email_correct_confirmed, password=password_correct)
-        print(f'running users/tests.py, setup ... user_confirmed Authentication Success: {authenticated_user is not None}')
+        logger.debug(f'running users/tests.py, setup ... user_confirmed Authentication Success: {authenticated_user is not None}')
 
 
         # Create unconfirmed user
@@ -94,10 +93,10 @@ class MyModelTests(TestCase):
             confirmed=False,
         )
         # Print statements for unconfirmed user
-        print(f'running users/tests.py, setup ... unconfirmed user created: {self.user_unconfirmed.username}, Email: {self.user_unconfirmed.email}, Active: {self.user_unconfirmed.is_active}') 
+        logger.debug(f'running users/tests.py, setup ... unconfirmed user created: {self.user_unconfirmed.username}, Email: {self.user_unconfirmed.email}, Active: {self.user_unconfirmed.is_active}') 
         # Test authenticating unconfirmed user
         authenticated_user = authenticate(email=email_correct_unconfirmed, password=password_correct)
-        print(f'running users/tests.py, setup ... user_unconfirmed Authentication Success: {authenticated_user is not None}')
+        logger.debug(f'running users/tests.py, setup ... user_unconfirmed Authentication Success: {authenticated_user is not None}')
 
 
     def tearDown(self):
@@ -120,25 +119,25 @@ class MyModelTests(TestCase):
     # 11. HTML/JS injection into password
 
     # login_view Test 1: login.html returns code 200
-    def test_login_code_200(self):
-        print(f'running users/tests.py, test { test_number } ... requested URL in test 1 is: {reverse("users:login")}')
+    def test_users_login_code_200(self):
+        logger.debug(f'running users/tests.py, test { test_number } ... requested URL in test 1 is: {reverse("users:login")}')
         
         response = self.client.get(reverse('users:login'), follow=False)  # Use 'login' as your named URL pattern
         
         if response.status_code in [301, 302]:
-            print(f'running users/tests.py, test { test_number } ... redirected to URL: {response.url}')
+            logger.debug(f'running users/tests.py, test { test_number } ... redirected to URL: {response.url}')
         
         self.assertEqual(response.status_code, 200)
         
 
     # login_view Test 2: Happy Path: Confirmed user logs in w/ valid email address + valid password --> user redirected to / w/ success message.
-    def test_login_happy_path(self):
+    def test_users_login_happy_path(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         login_url = reverse('users:login')
-        print(f'running users/tests.py, test { test_number } ... login URL is: {login_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... login URL is: {login_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:login'), {
@@ -151,11 +150,11 @@ class MyModelTests(TestCase):
 
         # Manually follow the redirect if necessary
         redirect_url = response.url  # This is the URL to which the response is redirecting
-        print(f'Running users/tests.py, test { test_number } ... response.url is: {redirect_url}')  # Check the URL
+        logger.debug(f'Running users/tests.py, test { test_number } ... response.url is: {redirect_url}')  # Check the URL
 
         # Follow the redirect manually
         response_followed = self.client.get(redirect_url, follow=True)
-        print(f'Running users/tests.py, test { test_number } ... final destination after following redirect is: {response_followed.request["PATH_INFO"]}')
+        logger.debug(f'Running users/tests.py, test { test_number } ... final destination after following redirect is: {response_followed.request["PATH_INFO"]}')
 
         # Assert the final response is 200
         self.assertEqual(response_followed.status_code, 200)
@@ -165,16 +164,16 @@ class MyModelTests(TestCase):
 
     
     # login_view Test 3: Missing CSRF token on form submission
-    def test_login_missing_CSRF(self):
+    def test_users_login_missing_CSRF(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Initialize the Django test client
         client = Client(enforce_csrf_checks=True)  # This enforces CSRF checks
 
         login_url = reverse('users:login')
-        print(f'running users/tests.py, test { test_number } ... login URL is: {login_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... login URL is: {login_url}')
 
         # Post without following redirects to check the immediate response
         response = client.post(login_url, {
@@ -187,10 +186,10 @@ class MyModelTests(TestCase):
         
         
     # login_view Test 4: Confirmed user omits email from form submission
-    def test_login_missing_email(self):
+    def test_users_login_missing_email(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:login'), {
@@ -206,10 +205,10 @@ class MyModelTests(TestCase):
 
 
     # login_view Test 5: Confirmed user omits password from form submission
-    def test_login_missing_password(self):
+    def test_users_login_missing_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:login'), {
@@ -225,10 +224,10 @@ class MyModelTests(TestCase):
 
 
     # login_view Test 6: Confirmed user uses wrong password
-    def test_login_bad_password(self):
+    def test_users_login_bad_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:login'), {
@@ -244,10 +243,10 @@ class MyModelTests(TestCase):
 
 
     # login_view Test 7: Unconfirmed user tries to log in
-    def test_login_unconfirmed_user(self):
+    def test_users_login_unconfirmed_user(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:login'), {
@@ -263,10 +262,10 @@ class MyModelTests(TestCase):
 
 
     # login_view Test 8: User enters something other than an email address in login form
-    def test_login_not_email_format(self):
+    def test_users_login_not_email_format(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test {test_number} ... starting test')
+        logger.debug(f'running users/tests.py, test {test_number} ... starting test')
 
         global malicious_sql_code
         
@@ -287,10 +286,10 @@ class MyModelTests(TestCase):
     
 
     # login_view Test 9: User enters prohibited chars for password
-    def test_login_password_prohibited_chars(self):
+    def test_users_login_password_prohibited_chars(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test {test_number} ... starting test')
+        logger.debug(f'running users/tests.py, test {test_number} ... starting test')
 
         global malicious_sql_code
         
@@ -311,10 +310,10 @@ class MyModelTests(TestCase):
     
     
     # login_view Test 10: Attempted SQL Injection in password
-    def test_login_sql_injection_attempt(self):
+    def test_users_login_sql_injection_attempt(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test {test_number} ... starting test')
+        logger.debug(f'running users/tests.py, test {test_number} ... starting test')
 
         global malicious_sql_code
         
@@ -338,10 +337,10 @@ class MyModelTests(TestCase):
 
 
     # login_view Test 11: Attempted HTML/JS Injection in login form
-    def test_login_html_injection_attempt(self):
+    def test_users_login_html_injection_attempt(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test {test_number} ... starting test')
+        logger.debug(f'running users/tests.py, test {test_number} ... starting test')
 
         global malicious_html_code
         
@@ -393,28 +392,28 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 1: /register/ returns code 200
-    def test_register_code_200(self):
+    def test_users_register_code_200(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... requested URL in test 1 is: {reverse("users:register")}')
+        logger.debug(f'running users/tests.py, test { test_number } ... requested URL in test 1 is: {reverse("users:register")}')
         
         response = self.client.get(reverse('users:register'), follow=False)  # Use 'login' as your named URL pattern
         
         if response.status_code in [301, 302]:
-            print(f'running users/tests.py, test { test_number } ... redirected to URL: {response.url}')
+            logger.debug(f'running users/tests.py, test { test_number } ... redirected to URL: {response.url}')
         
         self.assertEqual(response.status_code, 200)
 
 
     # register_view Test 2: Happy path
-    def test_register_happy_path(self):
+    def test_users_register_happy_path(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -442,17 +441,17 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 3: Missing CSRF
-    def test_register_missing_CSRF(self):
+    def test_users_register_missing_CSRF(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Initialize the Django test client
         client = Client(enforce_csrf_checks=True)  # This enforces CSRF checks
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = client.post(register_url, {
@@ -474,14 +473,14 @@ class MyModelTests(TestCase):
 
         
     # register_view Test 4: Missing first_name
-    def test_register_missing_first_name(self):
+    def test_users_register_missing_first_name(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -506,14 +505,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 5: Missing last_name
-    def test_register_missing_last_name(self):
+    def test_users_register_missing_last_name(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -538,14 +537,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 6: Missing username
-    def test_register_missing_username(self):
+    def test_users_register_missing_username(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -570,14 +569,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 7: Missing email
-    def test_register_missing_email(self):
+    def test_users_register_missing_email(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -602,14 +601,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 8: Missing password
-    def test_register_missing_password(self):
+    def test_users_register_missing_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -634,14 +633,14 @@ class MyModelTests(TestCase):
         
         
     # register_view Test 9: Missing password_confirmation
-    def test_register_missing_password_confirmation(self):
+    def test_users_register_missing_password_confirmation(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -666,14 +665,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 10: Missing cash_initial
-    def test_register_missing_cash_initial(self):
+    def test_users_register_missing_cash_initial(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -698,14 +697,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 11: Missing accounting_method
-    def test_register_missing_accounting_method(self):
+    def test_users_register_missing_accounting_method(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -730,14 +729,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 12: Missing tax_loss_offsets
-    def test_register_missing_tax_loss_offsets(self):
+    def test_users_register_missing_tax_loss_offsets(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -762,14 +761,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 13: Missing tax_rate_STCG
-    def test_register_missing_tax_rate_STCG(self):
+    def test_users_register_missing_tax_rate_STCG(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -794,14 +793,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 14: Missing tax_rate_LTCG
-    def test_register_missing_tax_rate_LTCG(self):
+    def test_users_register_missing_tax_rate_LTCG(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -826,14 +825,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 15: Email not in email address format
-    def test_register_not_email_format(self):
+    def test_users_register_not_email_format(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -858,14 +857,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 16: password != password_confirmation
-    def test_register_passwords_not_matching(self):
+    def test_users_register_passwords_not_matching(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -890,14 +889,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 17: cash_initial < 0
-    def test_register_cash_initial_negative(self):
+    def test_users_register_cash_initial_negative(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -922,14 +921,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 18: Accounting method not 'LIFO' or 'FIFO'
-    def test_register_accounting_method_not_LIFO_not_FIFO(self):
+    def test_users_register_accounting_method_not_LIFO_not_FIFO(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -954,14 +953,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 19: tax_rate_STCG < 0
-    def test_register_tax_rate_STCG_negative(self):
+    def test_users_register_tax_rate_STCG_negative(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -986,14 +985,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 20: tax_rate_STCG > 50%
-    def test_register_tax_rate_STCG_excessive(self):
+    def test_users_register_tax_rate_STCG_excessive(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -1018,14 +1017,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 21: tax_rate_LTCG < 0
-    def test_register_tax_rate_LTCG_negative(self):
+    def test_users_register_tax_rate_LTCG_negative(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -1050,14 +1049,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 22: tax_rate_LTCG > 50%
-    def test_register_tax_rate_LTCG_excessive(self):
+    def test_users_register_tax_rate_LTCG_excessive(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -1082,14 +1081,14 @@ class MyModelTests(TestCase):
 
 
         # register_view Test 19: tax_rate_STCG < 0
-    def test_register_tax_rate_STCG_negative(self):
+    def test_users_register_tax_rate_STCG_negative(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -1114,14 +1113,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 23: SQL injection attack for password
-    def test_register_sql_injection_attack_password(self):
+    def test_users_register_sql_injection_attack_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -1146,14 +1145,14 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 24: HTML/JS injection attack for password
-    def test_register_html_injection_attack_password(self):
+    def test_users_register_html_injection_attack_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:register'), {
@@ -1188,10 +1187,10 @@ class MyModelTests(TestCase):
     # Test 4: Token is expired
 
     # register_confirmation Test 25: Happy path
-    def test_register_confirmation_happy_path(self):
+    def test_users_register_confirmation_happy_path(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Create a token for the user
         token_generator = PasswordResetTokenGenerator()
@@ -1219,10 +1218,10 @@ class MyModelTests(TestCase):
 
 
     # register_view Test 26: No token in url
-    def test_register_confirmation_no_token_in_url(self):
+    def test_users_register_confirmation_no_token_in_url(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... requested URL in test 1 is: {reverse("users:register")}')
+        logger.debug(f'running users/tests.py, test { test_number } ... requested URL in test 1 is: {reverse("users:register")}')
         
         response = self.client.get(reverse('users:register_confirmation'), follow=False)  # Use 'login' as your named URL pattern
         
@@ -1231,11 +1230,11 @@ class MyModelTests(TestCase):
 
         # Manually follow the redirect if necessary
         redirect_url = response.url  # This is the URL to which the response is redirecting
-        print(f'Running users/tests.py, test { test_number } ... response.url is: {redirect_url}')  # Check the URL
+        logger.debug(f'Running users/tests.py, test { test_number } ... response.url is: {redirect_url}')  # Check the URL
 
         # Follow the redirect manually
         response_followed = self.client.get(redirect_url, follow=True)
-        print(f'Running users/tests.py, test { test_number } ... final destination after following redirect is: {response_followed.request["PATH_INFO"]}')
+        logger.debug(f'Running users/tests.py, test { test_number } ... final destination after following redirect is: {response_followed.request["PATH_INFO"]}')
 
         # Extract messages from the response context
         messages = [str(message) for message in get_messages(response.wsgi_request)]
@@ -1252,10 +1251,10 @@ class MyModelTests(TestCase):
 
 
     # register_confirmation Test 27: User re-uses confirmation link
-    def test_register_confirmation_re_use_link(self):
+    def test_users_register_confirmation_re_use_link(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Create a token for the user
         token_generator = PasswordResetTokenGenerator()
@@ -1289,10 +1288,10 @@ class MyModelTests(TestCase):
 
 
     # register_confirmation Test 28: Expired token
-    def test_register_confirmation_expired_token(self):
+    def test_users_register_confirmation_expired_token(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Create a token for the user
         token_generator = PasswordResetTokenGenerator()
@@ -1347,10 +1346,10 @@ class MyModelTests(TestCase):
     # HTML/JS injection to password
 
     # Test 29: Returns 200
-    def test_password_change_200(self):
+    def test_users_password_change_200(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1360,16 +1359,16 @@ class MyModelTests(TestCase):
         response = self.client.get(reverse('users:password_change'), follow=False)  # Use 'login' as your named URL pattern
         
         if response.status_code in [301, 302]:
-            print(f'running users/tests.py, test { test_number } ... redirected to URL: {response.url}')
+            logger.debug(f'running users/tests.py, test { test_number } ... redirected to URL: {response.url}')
         
         self.assertEqual(response.status_code, 200)
 
 
     # Test 30: Happy path
-    def test_password_change_happy_path(self):
+    def test_users_password_change_happy_path(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1401,10 +1400,10 @@ class MyModelTests(TestCase):
 
 
     # Test 31: Missing CSRF
-    def test_password_change_missing_csrf(self):
+    def test_users_password_change_missing_csrf(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1415,7 +1414,7 @@ class MyModelTests(TestCase):
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:register')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = client.post(register_url, {
@@ -1430,10 +1429,10 @@ class MyModelTests(TestCase):
 
 
     # Test 32: Unauthenticated user
-    def test_password_change_unauthenticated_user(self):
+    def test_users_password_change_unauthenticated_user(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:password_change'), {
@@ -1480,10 +1479,10 @@ class MyModelTests(TestCase):
     
     
     # Test 33: Missing email
-    def test_password_change_missing_email(self):
+    def test_users_password_change_missing_email(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1512,10 +1511,10 @@ class MyModelTests(TestCase):
 
 
     # Test 34: Missing password_old
-    def test_password_change_missing_password_old(self):
+    def test_users_password_change_missing_password_old(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1544,10 +1543,10 @@ class MyModelTests(TestCase):
 
 
     # Test 35: Missing password
-    def test_password_change_missing_password(self):
+    def test_users_password_change_missing_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1576,10 +1575,10 @@ class MyModelTests(TestCase):
 
 
     # Test 36: Missing password_confirmation
-    def test_password_change_missing_password_confirmation(self):
+    def test_users_password_change_missing_password_confirmation(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1608,10 +1607,10 @@ class MyModelTests(TestCase):
 
 
     # Test 37: Incorrect password_old
-    def test_password_change_incorrect_password_old(self):
+    def test_users_password_change_incorrect_password_old(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1640,10 +1639,10 @@ class MyModelTests(TestCase):
 
 
     # Test 38: password != password_confirmation
-    def test_password_change_mismatch_password_and_password_confirmation(self):
+    def test_users_password_change_mismatch_password_and_password_confirmation(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1672,10 +1671,10 @@ class MyModelTests(TestCase):
 
 
     # Test 39: User enters the old password for new password 
-    def test_password_change_password_old_matches_password(self):
+    def test_users_password_change_password_old_matches_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1704,10 +1703,10 @@ class MyModelTests(TestCase):
 
 
     # Test 40: SQL injection to password
-    def test_password_change_sql_injection_to_password(self):
+    def test_users_password_change_sql_injection_to_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1736,10 +1735,10 @@ class MyModelTests(TestCase):
 
 
     # Test 41: HTML/JS injection to password
-    def test_password_change_html_injection_to_password(self):
+    def test_users_password_change_html_injection_to_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -1782,24 +1781,24 @@ class MyModelTests(TestCase):
 
 
     # Test 42: returns code 200
-    def test_password_reset_code_200(self):
+    def test_users_password_reset_code_200(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... requested URL in test 1 is: {reverse("users:password_reset")}')
+        logger.debug(f'running users/tests.py, test { test_number } ... requested URL in test 1 is: {reverse("users:password_reset")}')
         
         response = self.client.get(reverse('users:password_reset'), follow=False)  # Use 'login' as your named URL pattern
         
         if response.status_code in [301, 302]:
-            print(f'running users/tests.py, test { test_number } ... redirected to URL: {response.url}')
+            logger.debug(f'running users/tests.py, test { test_number } ... redirected to URL: {response.url}')
         
         self.assertEqual(response.status_code, 200)
 
 
     # Test 43: Happy path
-    def test_password_reset_happy_path(self):
+    def test_users_password_reset_happy_path(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:password_reset'), {
@@ -1824,17 +1823,17 @@ class MyModelTests(TestCase):
 
 
     # Test 44: Missing CSRF
-    def test_password_reset_missing_CSRF(self):
+    def test_users_password_reset_missing_CSRF(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Initialize the Django test client
         client = Client(enforce_csrf_checks=True)  # This enforces CSRF checks
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:password_reset')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = client.post(register_url, {
@@ -1846,10 +1845,10 @@ class MyModelTests(TestCase):
 
 
     # Test 45: Missing email
-    def test_password_reset_missing_email(self):
+    def test_users_password_reset_missing_email(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:password_reset'), {
@@ -1874,10 +1873,10 @@ class MyModelTests(TestCase):
 
 
     # Test 46: Uses random email address
-    def test_password_reset_random_email(self):
+    def test_users_password_reset_random_email(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:password_reset'), {
@@ -1902,10 +1901,10 @@ class MyModelTests(TestCase):
 
 
     # Test 47: SQL injection to password
-    def test_password_reset_SQL_injection_to_email(self):
+    def test_users_password_reset_SQL_injection_to_email(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:password_reset'), {
@@ -1930,10 +1929,10 @@ class MyModelTests(TestCase):
 
 
     # Test 48: HTML/JS injection to password
-    def test_password_reset_HTML_injection_to_email(self):
+    def test_users_password_reset_HTML_injection_to_email(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
         
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:password_reset'), {
@@ -1967,10 +1966,10 @@ class MyModelTests(TestCase):
     # Test 4: Token is expired
 
     # Test 49: Happy path
-    def test_password_reset_confirmation_happy_path(self):
+    def test_users_password_reset_confirmation_happy_path(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Create a token for the user
         token_generator = PasswordResetTokenGenerator()
@@ -2008,10 +2007,10 @@ class MyModelTests(TestCase):
         
 
     # Test 50: User re-uses confirmation link
-    def test_password_reset_confirmation_re_use_link(self):
+    def test_users_password_reset_confirmation_re_use_link(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Create a token for the user
         token_generator = PasswordResetTokenGenerator()
@@ -2056,10 +2055,10 @@ class MyModelTests(TestCase):
 
     # Test 51: Expired token
     @patch('django.contrib.auth.tokens.PasswordResetTokenGenerator.check_token')
-    def test_password_reset_confirmation_expired_token(self, mock_check_token):
+    def test_users_password_reset_confirmation_expired_token(self, mock_check_token):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Mock the check_token method to return False, simulating an expired token
         mock_check_token.return_value = False
@@ -2104,10 +2103,10 @@ class MyModelTests(TestCase):
     # HTML/JS injection attempt for password
     
     # Test 52: Returns 200
-    def test_profile_200(self):
+    def test_users_profile_200(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -2117,16 +2116,16 @@ class MyModelTests(TestCase):
         response = self.client.get(reverse('users:profile'), follow=False)  # Use 'login' as your named URL pattern
         
         if response.status_code in [301, 302]:
-            print(f'running users/tests.py, test { test_number } ... redirected to URL: {response.url}')
+            logger.debug(f'running users/tests.py, test { test_number } ... redirected to URL: {response.url}')
         
         self.assertEqual(response.status_code, 200)
 
     
     # Test 53: Happy path a: no user input
-    def test_profile_happy_path_a(self):
+    def test_users_profile_happy_path_a(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -2177,18 +2176,18 @@ class MyModelTests(TestCase):
         self.assertIn(expected_message, messages, f"Expected message '{expected_message}' not found in response messages: {messages}")
 
         # Check which template is used in the final response
-        self.assertTemplateUsed(response, 'users/index.html')
+        self.assertTemplateUsed(response, 'brokerage/index.html')
 
 
     # Test 54: Happy path b: user input
-    def test_profile_happy_path_b(self):
+    def test_users_profile_happy_path_b(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
-        self.assertTrue(login_successful, "Logging in user_confirmed failed")
+        self.assertTrue(login_successful, 'Logging in user_confirmed')
 
         # Save the old user and user profile
         user_old = User.objects.get(username=self.user_confirmed.username)
@@ -2235,14 +2234,14 @@ class MyModelTests(TestCase):
         self.assertIn(expected_message, messages, f"Expected message '{expected_message}' not found in response messages: {messages}")
 
         # Check which template is used in the final response
-        self.assertTemplateUsed(response, 'users/index.html')
+        self.assertTemplateUsed(response, 'brokerage/index.html')
 
     
     # Test 55: Missing CSRF
-    def test_profile_missing_csrf(self):
+    def test_users_profile_missing_csrf(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -2253,7 +2252,7 @@ class MyModelTests(TestCase):
         
         # Visits /register/ and submits valid data
         register_url = reverse('users:profile')
-        print(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
+        logger.debug(f'running users/tests.py, test { test_number } ... register URL is: {register_url}')
 
         # Post without following redirects to check the immediate response
         response = client.post(register_url, {
@@ -2271,10 +2270,10 @@ class MyModelTests(TestCase):
 
     
     # Test 56: Unauthenticated user
-    def test_profile_unauthenticated_user(self):
+    def test_users_profile_unauthenticated_user(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Post without following redirects to check the immediate response
         response = self.client.post(reverse('users:profile'), {
@@ -2295,10 +2294,10 @@ class MyModelTests(TestCase):
 
 
     # Test 57: accounting_method is something other than 'LIFO' or 'FIFO'
-    def test_profile_accounting_method_not_LIFO_not_FIFO(self):
+    def test_users_profile_accounting_method_not_LIFO_not_FIFO(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -2334,10 +2333,10 @@ class MyModelTests(TestCase):
 
 
     # Test 58: tax_rate_STCG is < 0
-    def test_profile_tax_rate_STCG_is_negative(self):
+    def test_users_profile_tax_rate_STCG_is_negative(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -2373,10 +2372,10 @@ class MyModelTests(TestCase):
 
 
     # Test 59: tax_rate_STCG is > 50%
-    def test_profile_tax_rate_STCG_too_high(self):
+    def test_users_profile_tax_rate_STCG_too_high(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -2412,10 +2411,10 @@ class MyModelTests(TestCase):
     
     
     # Test 60: tax_rate_LTCG is < 0
-    def test_profile_tax_rate_LTCG_is_negative(self):
+    def test_users_profile_tax_rate_LTCG_is_negative(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -2451,10 +2450,10 @@ class MyModelTests(TestCase):
 
 
     # Test 61: tax_rate_LTCG is > 50%
-    def test_profile_tax_rate_LTCG_too_high(self):
+    def test_users_profile_tax_rate_LTCG_too_high(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -2490,10 +2489,10 @@ class MyModelTests(TestCase):
 
 
     # Test 62: SQL injection attempt for first_name
-    def test_profile_SQL_injection_to_password(self):
+    def test_users_profile_SQL_injection_to_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp
@@ -2529,10 +2528,10 @@ class MyModelTests(TestCase):
 
 
     # Test 63: HTML/JS injection attempt for first_name
-    def test_profile_HTML_injection_to_password(self):
+    def test_users_profile_HTML_injection_to_password(self):
         global test_number
         test_number += 1
-        print(f'running users/tests.py, test { test_number } ... starting test')
+        logger.debug(f'running users/tests.py, test { test_number } ... starting test')
 
         # Log in the confirmed user
         login_successful = self.client.login(username=self.user_confirmed.username, password=password_correct)  # Use the password you used to create the user_confirmed in setUp

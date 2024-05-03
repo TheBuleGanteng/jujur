@@ -1,0 +1,196 @@
+{% extends 'layout.html' %}
+{% load brokerage_filters %}
+
+{% block title %}
+    Stock Information
+{% endblock %}
+
+{% block main %}
+
+    <div class='container-fluid pt-2 pb-5'>
+
+        <!-- boostrap5 loading spinner -->
+        <div id='loadingSpinner' class='d-flex align-items-center justify-content-center'>
+            <div>
+            <strong>Loading...</strong>
+            <div class='spinner-border ms-auto' role='status' aria-hidden='true'></div>
+            </div>
+        </div>
+        <!-- /boostrap5 loading spinner -->
+
+        <!-- page content -->
+        <div class='row mb-1'>
+
+            <!-- logo -->
+            <div class='col-lg-2 col-3'>
+                <div class='quote-logo-small'>
+                    <img src={{ company_profile.image }} alt='Company Logo' class='img-fluid'>
+                </div>
+            </div>
+            <!-- /logo -->
+
+            <!-- company name, symbol, and price change -->
+            <div class='col'>
+                <div class='row content-start'>
+                    <h1>{{ company_profile.companyName }} ({{ company_profile.symbol }})</h1>  
+                </div>
+                <div class='row content-start'>
+                    <div>
+                        <span class='quote-currency'>{{ company_profile.currency }}:</span>
+                        <span class='quote-price'>{{ company_profile.price | filter_usd }}</span>
+                    </div>
+                </div>
+                <div class='row content-start'>
+                    <div>
+                        <span class='quote-currency'>1d:</span>
+                        {% if company_profile.changes < 0 %}
+                            <span class='quote-changes quote-changes-negative me-2'>{{ company_profile.changes | filter_usd }}</span>
+                            <span class='quote-changes quote-changes-negative'>{{ company_profile.changes_percent_negative }}</span>
+                        {% elif company_profile.changes > 0 %}
+                            <span class='quote-changes quote-changes-positive'>+{{ company_profile.changes | filter_usd }}</span>
+                            <span class='quote-changes quote-changes-positive'>{{ company_profile.changes_percent_positive }}</span>
+                        {% else %}
+                            <span class='quote-changes'>{{ company_profile.changes | filter_usd }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class='col col-lg-2 col-3'>
+                <div class='row content-start'>
+                    <div>
+                        <a href='{% url "brokerage:sell" %}' class='btn btn-success w-100 mb-1 p-0'>Sell {{ company_profile.symbol }}</a>
+                        <a href='{% url "brokerage:buy" %}' class='btn btn-success w-100 mb-1 p-0'>Buy {{ company_profile.symbol }}</a>                
+                    </div>
+                </div>
+            </div>
+            <!-- /company name, symbol, and price change -->
+        </div>
+
+        <!-- accordion for company profile -->
+        <div class='row mb-1'>
+            <div class='accordion accordion-flush' id='accordionFlushExample'>
+                <div class='accordion-item'>
+                <h2 class='accordion-header' id='flush-headingOne'>
+                    <button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#flush-collapseOne' aria-expanded='false' aria-controls='flush-collapseOne'>
+                    Company profile
+                    </button>
+                </h2>
+                <div id='flush-collapseOne' class='accordion-collapse collapse show' aria-labelledby='flush-headingOne'>
+                    <div class='accordion-body'>
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>Description: </strong></span>
+                            </div>
+                            <div class='col'>
+                                {{ company_profile.description}}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>Industry: </strong></span>
+                            </div>
+                            <div class='col'>
+                                {{ company_profile.industry}}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>Sector: </strong></span>
+                            </div>
+                            <div class='col'>
+                                {{ company_profile.sector}}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>Website: </strong></span>
+                            </div>
+                            <div class='col'>
+                                <a href={{ company_profile.website }} target='_blank' rel='noopener noreferrer'>{{ company_profile.website }}</a>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>Employees: </strong></span>
+                            </div>
+                            <div class='col'>
+                                {{ company_profile.fullTimeEmployees | filter_reformat_number }}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>Country: </strong></span>
+                            </div>
+                            <div class='col'>
+                                {{ company_profile.country }}
+                            </div>
+                        </div>
+                        <hr>            
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>CEO: </strong></span>
+                            </div>
+                            <div class='col'>
+                                {{ company_profile.ceo }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                <div class='accordion-item'>
+                <h2 class='accordion-header' id='flush-headingTwo'>
+                    <button class='accordion-button collapsed mt-1' type='button' data-bs-toggle='collapse' data-bs-target='#flush-collapseTwo' aria-expanded='false' aria-controls='flush-collapseTwo'>
+                    Stock data
+                    </button>
+                </h2>
+                <div id='flush-collapseTwo' class='accordion-collapse collapse show' aria-labelledby='flush-headingTwo'>
+                    <div class='accordion-body'>
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>52 Wk. range: </strong></span>
+                            </div>
+                            <div class='col'>
+                                {{ company_profile.range_reformatted }}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>Mkt. cap: </strong></span>
+                            </div>
+                            <div class='col'>
+                                {{ company_profile.mktCap_reformatted }}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>Avg. vol.: </strong></span>
+                            </div>
+                            <div class='col'>
+                                {{ company_profile.volAvg_reformatted }}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class='row mb-1'>
+                            <div class='col-xl-1 col-lg-2 col-md-3 col-4'>
+                                <span><strong>Beta: </strong></span>
+                            </div>
+                            <div class='col'>
+                                {{ company_profile.beta }}
+                            </div>
+                        </div>  
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+{% endblock %}
