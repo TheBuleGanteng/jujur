@@ -49,5 +49,5 @@ supervisor==4.2.5
 typing_extensions==4.10.0
 uritemplate==4.1.1
 urllib3==2.2.1
-Werkzeug==3.0.1
+Werkzeug==3.0.3
 whitenoise==6.6.0
